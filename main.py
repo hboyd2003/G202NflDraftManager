@@ -158,8 +158,8 @@ class ImportDataDialog(Toplevel):
 
         #Start of Thomas' Code
         
-        userInputPicks = ["12","47","89","124","186","222","250"]
-        userInputNeeds = ["quarterback","defensiveend","runningback","defensiveback"
+        userInputPicks = ["12","47","89","124","186","222","256"]
+        userInputNeeds = ["quarterback","defensiveend","runningback","cornerback"
                           ,"safety","safety","widereceiver"]
         
         #def getRecPicks(pickNumber):
@@ -190,21 +190,31 @@ class ImportDataDialog(Toplevel):
                 #pickTally+=1
             #return recPicks
 
-        def getRecPicks(pickNumber):
-            pickOverall = int(userInputPicks[pickNumber-1])
+        def getRecPicks(pickNumber, numOfNeeds):
+            pickOverall = int(userInputPicks[pickNumber])
             pickTally = pickOverall
             recPicks = []
-            numNeeds = len(userInputNeeds)
+            numNeeds = len(numOfNeeds)
             stop = 0
             counta = 0
             stopper = 0
             while(counta<numNeeds):
                 counta2=0
-                while(counta2<10):
+                picksAfter = 10
+                if( (pickOverall + 10) > (len(everything)) ):
+                    picksAfter = (len(everything)) - pickOverall
+                while(counta2<picksAfter):
                     pos1 = (everything[pickOverall+counta2].get("position")).lower()
                     if(pos1 == userInputNeeds[counta]):
-                        recPicks.append(everything[pickOverall+counta2])
-                        counta2+=10
+                        counter4 = 0
+                        appendOrNo2 = 0
+                        while(counter4 < len(recPicks)):
+                            if(recPicks[counter4] == everything[pickOverall+counta2]):
+                                appendOrNo2 = 1
+                            counter4+=1
+                        if(appendOrNo2 == 0):
+                            recPicks.append(everything[pickOverall+counta2])
+                            counta2+=10
                     counta2+=1
                 if(len(recPicks) == 3):
                     stopper = 1
@@ -232,14 +242,67 @@ class ImportDataDialog(Toplevel):
                             pickTally+=(len(everything))
                         counter2 += 1
                     pickTally+=1
+            pickTally = pickOverall
+            if(len(recPicks) != 3):
+                while(pickTally<len(everything)):
+                    if(len(recPicks) != 3):
+                        counterAgain = 0
+                        appendOrNo3 = 0
+                        while(counterAgain < len(recPicks)):
+                            if(recPicks[counterAgain] == everything[pickTally]):
+                                appendOrNo3 = 1
+                            counterAgain+=1
+                        if(appendOrNo3 == 0):
+                            recPicks.append(everything[pickTally])
+                    else:
+                        pickTally+=len(everything)
+                    pickTally+=1                        
             return recPicks
+        
 
-        reccyPicks = getRecPicks(3)
-        xer = len(reccyPicks)
-        counr = 0
-        while(counr < xer):
-            print(reccyPicks[counr])
-            counr+=1
+        selectedPlayers = []
+
+        def draft(listOfPicks, listOfNeeds):
+            draftCount = 0
+            reccoPicks = []
+            userInputNum = 0
+            while(draftCount < len(listOfPicks)):
+                reccoPicks = getRecPicks(draftCount, listOfNeeds)
+                xer = len(reccoPicks)
+                counr = 0
+                while(counr < xer):
+                    print(reccoPicks[counr])
+                    print("\n")
+                    counr+=1
+                print("Select Player")
+                userInputNum = int(input())
+                userChoice = reccoPicks[userInputNum]
+                selectedPlayers.append(userChoice)
+                posCounter = 0
+                posPos = userChoice.get("position").lower()
+                while(posCounter < len(listOfNeeds)):
+                    if(posPos == listOfNeeds[posCounter]):
+                        listOfNeeds.pop(posCounter)
+                        posCounter += len(listOfNeeds)
+                    posCounter+=1
+                draftCount+=1
+            print("Your Selections: \n")
+            xer2 = len(selectedPlayers)
+            counr2 = 0
+            while(counr2 < xer2):
+                print(selectedPlayers[counr2])
+                print("\n")
+                counr2+=1
+                
+        draft(userInputPicks, userInputNeeds)
+
+
+        #reccyPicks = getRecPicks(6, userInputNeeds)
+        #xer = len(reccyPicks)
+        #counr = 0
+        #while(counr < xer):
+            #print(reccyPicks[counr])
+            #counr+=1
                 
             
 
