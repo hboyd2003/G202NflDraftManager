@@ -57,6 +57,11 @@ class MainWindow(Frame):
         
 
 class ImportDataDialog(Toplevel):
+    #User input for the picks that the user has as well as their top positional needs (Needs to be adjusted to be the actual user input)
+    userInputPicks = ["12","47","89","124","186","222","256"]
+    userInputNeeds = ["quarterback","defensiveend","runningback","cornerback"
+                        ,"safety","safety","widereceiver"]
+
     def __init__(self, master, controller):
         Toplevel.__init__(self, master)
         self.controller = controller
@@ -85,6 +90,8 @@ class ImportDataDialog(Toplevel):
         root.config(cursor="")
         self.grab_release()
         self.destroy()
+        #Calls the draft function, thus running the code
+        self.draft(self.userInputPicks, self.userInputNeeds)
 
     def importCSV(self):
         print("Not implemented")
@@ -94,7 +101,7 @@ class ImportDataDialog(Toplevel):
         configuration.api_key['Authorization'] = 'PrEoN+4gLLbOFbNh9Fevv0hRyYTBNVmQ3DLnhwvTQn06OJqatwpxvTVhR5nLrjFx'
         configuration.api_key_prefix['Authorization'] = 'Bearer'
         api_instance = cfbd.DraftApi(cfbd.ApiClient(configuration))
-        self.draftPicks = api_instance.get_draft_picks(year=datetime.now().year)
+        self.draftPicksRaw = api_instance.get_draft_picks(year=datetime.now().year)
         return
 
     def importDatabase(self):
@@ -102,7 +109,7 @@ class ImportDataDialog(Toplevel):
         listy = []
         import re
         #puts everything in game in a list and makes each item a string
-        for line in self.draftPicks:
+        for line in self.draftPicksRaw:
             line = str(line)
             thing = re.split(':|\n', line)
             listy.append(thing)
@@ -150,146 +157,120 @@ class ImportDataDialog(Toplevel):
         #print("Done")
         self.controller.draftPicks = everything
         x=0
-        #while(x<70):
-           #print(everything[x])
-           #x+=1
-        #print(everything[217])
         #End of Seth's code
 
-        #Start of Thomas' Code
+    #Start of Thomas' Code
+    #Gets three reccomended selections for a user pick and set of needs
+    def getRecPicks(self, pickNumber, numOfNeeds):
+        pickOverall = int(self.userInputPicks[pickNumber])
+        pickTally = pickOverall
+        draftPicks = self.controller.draftPicks
+        recPicks = []
+        numNeeds = len(numOfNeeds)
+        stop = 0
+        counta = 0
+        stopper = 0
+        #Goes through each poitional need in order and sees if there are any players with that position available in the 10 picks after and including the user pick
+        while(counta<numNeeds):
+            counta2=0
+            picksAfter = 10
+            if( (pickOverall + 10) > (len(draftPicks)) ):
+                picksAfter = (len(draftPicks)) - pickOverall
+            while(counta2<picksAfter):
+                pos1 = (draftPicks[pickOverall+counta2].get("position")).lower()
+                if(pos1 == self.userInputNeeds[counta]):
+                    counter4 = 0
+                    appendOrNo2 = 0
+                    while(counter4 < len(recPicks)):
+                        if(recPicks[counter4] == draftPicks[pickOverall+counta2]):
+                            appendOrNo2 = 1
+                        counter4+=1
+                    if(appendOrNo2 == 0):
+                        recPicks.append(draftPicks[pickOverall+counta2])
+                        counta2+=10
+                counta2+=1
+            if(len(recPicks) == 3):
+                stopper = 1
+                counta+=numNeeds
+            counta+=1
+        #If the previous loop does not produce three picks, this loop goes through the picks until it finds enough selections that fit under user needs or until it runs out of picks
+        if(stopper == 0):
+            while(pickTally<len(draftPicks)):
+                pos = (draftPicks[pickTally].get("position")).lower()
+                numNeeds = len(self.userInputNeeds)
+                counter2=0
+                while(counter2 < numNeeds):
+                    if(stop == 0):
+                        if(pos == self.userInputNeeds[counter2]):
+                            counter3 = 0
+                            appendOrNo = 0
+                            while(counter3 < len(recPicks)):
+                                if(recPicks[counter3] == draftPicks[pickTally]):
+                                    appendOrNo = 1
+                                counter3+=1
+                            if(appendOrNo == 0):
+                                recPicks.append(draftPicks[pickTally])
+                    if(len(recPicks) == 3):
+                        stop = 1
+                        counter2+=numNeeds
+                        pickTally+=(len(draftPicks))
+                    counter2 += 1
+                pickTally+=1
+        pickTally = pickOverall
+        #If the previous two loops still do not produce three picks, this loop goes through the picks until it finds enough selections, regardless of the user needs,
+        #or until it runs out of picks
+        if(len(recPicks) != 3):
+            while(pickTally<len(draftPicks)):
+                if(len(recPicks) != 3):
+                    counterAgain = 0
+                    appendOrNo3 = 0
+                    while(counterAgain < len(recPicks)):
+                        if(recPicks[counterAgain] == draftPicks[pickTally]):
+                            appendOrNo3 = 1
+                        counterAgain+=1
+                    if(appendOrNo3 == 0):
+                        recPicks.append(draftPicks[pickTally])
+                else:
+                    pickTally+=len(draftPicks)
+                pickTally+=1                        
+        return recPicks
 
-        #User input for the picks that the user has as well as their top positional needs (Needs to be adjusted to be the actual user input)
-        userInputPicks = ["12","47","89","124","186","222","256"]
-        userInputNeeds = ["quarterback","defensiveend","runningback","cornerback"
-                          ,"safety","safety","widereceiver"]
-        
-        #Gets three reccomended selections for a user pick and set of needs
-        def getRecPicks(pickNumber, numOfNeeds):
-            pickOverall = int(userInputPicks[pickNumber])
-            pickTally = pickOverall
-            recPicks = []
-            numNeeds = len(numOfNeeds)
-            stop = 0
-            counta = 0
-            stopper = 0
-            #Goes through each poitional need in order and sees if there are any players with that position available in the 10 picks after and including the user pick
-            while(counta<numNeeds):
-                counta2=0
-                picksAfter = 10
-                if( (pickOverall + 10) > (len(everything)) ):
-                    picksAfter = (len(everything)) - pickOverall
-                while(counta2<picksAfter):
-                    pos1 = (everything[pickOverall+counta2].get("position")).lower()
-                    if(pos1 == userInputNeeds[counta]):
-                        counter4 = 0
-                        appendOrNo2 = 0
-                        while(counter4 < len(recPicks)):
-                            if(recPicks[counter4] == everything[pickOverall+counta2]):
-                                appendOrNo2 = 1
-                            counter4+=1
-                        if(appendOrNo2 == 0):
-                            recPicks.append(everything[pickOverall+counta2])
-                            counta2+=10
-                    counta2+=1
-                if(len(recPicks) == 3):
-                    stopper = 1
-                    counta+=numNeeds
-                counta+=1
-            #If the previous loop does not produce three picks, this loop goes through the picks until it finds enough selections that fit under user needs or until it runs out of picks
-            if(stopper == 0):
-                while(pickTally<len(everything)):
-                    pos = (everything[pickTally].get("position")).lower()
-                    numNeeds = len(userInputNeeds)
-                    counter2=0
-                    while(counter2 < numNeeds):
-                        if(stop == 0):
-                            if(pos == userInputNeeds[counter2]):
-                                counter3 = 0
-                                appendOrNo = 0
-                                while(counter3 < len(recPicks)):
-                                    if(recPicks[counter3] == everything[pickTally]):
-                                        appendOrNo = 1
-                                    counter3+=1
-                                if(appendOrNo == 0):
-                                    recPicks.append(everything[pickTally])
-                        if(len(recPicks) == 3):
-                            stop = 1
-                            counter2+=numNeeds
-                            pickTally+=(len(everything))
-                        counter2 += 1
-                    pickTally+=1
-            pickTally = pickOverall
-            #If the previous two loops still do not produce three picks, this loop goes through the picks until it finds enough selections, regardless of the user needs,
-            #or until it runs out of picks
-            if(len(recPicks) != 3):
-                while(pickTally<len(everything)):
-                    if(len(recPicks) != 3):
-                        counterAgain = 0
-                        appendOrNo3 = 0
-                        while(counterAgain < len(recPicks)):
-                            if(recPicks[counterAgain] == everything[pickTally]):
-                                appendOrNo3 = 1
-                            counterAgain+=1
-                        if(appendOrNo3 == 0):
-                            recPicks.append(everything[pickTally])
-                    else:
-                        pickTally+=len(everything)
-                    pickTally+=1                        
-            return recPicks
-        
-
+    #Runs the draft process using the list of user picks and list of user needs, going through each round providing three reccomened players
+    #and allowing the user to select from the three. Removes positions from the list of needs when a player with said position is selected by the user.
+    #At the end, prints a list of the selected user picks.
+    def draft(self, listOfPicks, listOfNeeds):
         selectedPlayers = []
-
-        #Runs the draft process using the list of user picks and list of user needs, going through each round providing three reccomened players
-        #and allowing the user to select from the three. Removes positions from the list of needs when a player with said position is selected by the user.
-        #At the end, prints a list of the selected user picks.
-        def draft(listOfPicks, listOfNeeds):
-            draftCount = 0
-            reccoPicks = []
-            userInputNum = 0
-            while(draftCount < len(listOfPicks)):
-                reccoPicks = getRecPicks(draftCount, listOfNeeds)
-                xer = len(reccoPicks)
-                counr = 0
-                while(counr < xer):
-                    print(reccoPicks[counr])
-                    print("\n")
-                    counr+=1
-                print("Select Player")
-                userInputNum = int(input())
-                userChoice = reccoPicks[userInputNum]
-                selectedPlayers.append(userChoice)
-                posCounter = 0
-                posPos = userChoice.get("position").lower()
-                while(posCounter < len(listOfNeeds)):
-                    if(posPos == listOfNeeds[posCounter]):
-                        listOfNeeds.pop(posCounter)
-                        posCounter += len(listOfNeeds)
-                    posCounter+=1
-                draftCount+=1
-            print("Your Selections: \n")
-            xer2 = len(selectedPlayers)
-            counr2 = 0
-            while(counr2 < xer2):
-                print(selectedPlayers[counr2])
+        draftCount = 0
+        reccoPicks = []
+        userInputNum = 0
+        while(draftCount < len(listOfPicks)):
+            reccoPicks = self.getRecPicks(draftCount, listOfNeeds)
+            xer = len(reccoPicks)
+            counr = 0
+            while(counr < xer):
+                print(reccoPicks[counr])
                 print("\n")
-                counr2+=1
-
-        #Calls the draft function, thus running the code
-        draft(userInputPicks, userInputNeeds)
-
-
-        #reccyPicks = getRecPicks(6, userInputNeeds)
-        #xer = len(reccyPicks)
-        #counr = 0
-        #while(counr < xer):
-            #print(reccyPicks[counr])
-            #counr+=1
-                
-            
-
-
-        
+                counr+=1
+            print("Select Player")
+            userInputNum = 1
+            userChoice = reccoPicks[userInputNum]
+            selectedPlayers.append(userChoice)
+            posCounter = 0
+            posPos = userChoice.get("position").lower()
+            while(posCounter < len(listOfNeeds)):
+                if(posPos == listOfNeeds[posCounter]):
+                    listOfNeeds.pop(posCounter)
+                    posCounter += len(listOfNeeds)
+                posCounter+=1
+            draftCount+=1
+        print("Your Selections: \n")
+        xer2 = len(selectedPlayers)
+        counr2 = 0
+        while(counr2 < xer2):
+            print(selectedPlayers[counr2])
+            print("\n")
+            counr2+=1
+    
     def get_draftPicks(self):
         return self.draftPicks
         
