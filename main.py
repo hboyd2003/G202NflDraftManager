@@ -17,9 +17,44 @@ class MainWindow(Frame):
         self.csvButton = tk.Button(self, text="CSV")
         self.csvButton.grid(column=2, row=1)
         root.wait_window(ImportDataDialog(master=root, controller=self))
-        self.picksChoice = ttk.Treeview(columns=("Name", "Pick", "Height"), show="headings")
-        self.picksChoice.grid(column=0, row=0)
-        self.picksChoice.insert('', tk.END, values=self.draftPicks)
+
+        self.picksChoice = ttk.Treeview(columns=("position"))
+        self.picksChoice.grid(column=2, row=2)
+        self.picksChoice.heading("#0", text="Name", anchor=tk.CENTER)
+        self.picksChoice.heading("#1", text="Position", anchor=tk.CENTER)
+        self.picksChoice.column('#0', stretch=tk.YES)
+        self.picksChoice.column('#1', stretch=tk.YES)
+        self.picksChoice.bind("<Double-1>", self.onDoubleClick)
+        for player in self.draftPicks:
+            self.picksChoice.insert('', tk.END, text=player["name"] , values=player["position"])
+
+        self.addPick = self.csvButton = tk.Button(self, text="+")
+        self.csvButton.grid(column=2, row=1)
+    
+    def onDoubleClick(self, event):
+        selectItem = self.picksChoice.selection()[0]
+        selectColumn = self.picksChoice.identify_column(event.x)
+        itemTuple = self.picksChoice.bbox(selectItem, selectColumn)
+        offsetTuple = self.bbox(self.picksChoice)
+        finalTuple = [itemTuple[0], itemTuple[1], itemTuple[2], itemTuple[3]]
+        finalTuple[0] += offsetTuple[0]
+        finalTuple[1] += offsetTuple[1]
+        finalTuple[2] += offsetTuple[2]
+        finalTuple[3] += offsetTuple[3]
+        print(offsetTuple)
+
+        if (selectColumn == "#0"):
+            first_text = self.picksChoice.item(selectItem, "text")
+        else:
+            first_text = self.picksChoice.item(selectItem, "values")[0]
+        edit = tk.Entry(root, textvariable=first_text)
+        print(itemTuple)
+        edit.place(x = finalTuple[0],
+            y = finalTuple[1],
+            width=finalTuple[3] - finalTuple[0],
+            height=finalTuple[2] - finalTuple[1])
+        print("you clicked on", first_text)
+        
 
 class ImportDataDialog(Toplevel):
     def __init__(self, master, controller):
