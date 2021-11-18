@@ -122,39 +122,13 @@ class ImportDataDialog(Toplevel):
         #End of Seth's code
 
         #Start of Thomas' Code
-        
+
+        #User input for the picks that the user has as well as their top positional needs (Needs to be adjusted to be the actual user input)
         userInputPicks = ["12","47","89","124","186","222","256"]
         userInputNeeds = ["quarterback","defensiveend","runningback","cornerback"
                           ,"safety","safety","widereceiver"]
         
-        #def getRecPicks(pickNumber):
-            #pickOverall = int(userInputPicks[pickNumber-1])
-            #pickTally = pickOverall
-            #recPicks = []
-            #stop = 0
-            #while(pickTally<len(everything)):
-                #pos = (everything[pickTally].get("position")).lower()
-                #numNeeds = len(userInputNeeds)
-                #counter2=0
-                #while(counter2 < numNeeds):
-                    #if(stop == 0):
-                        #if(pos == userInputNeeds[counter2]):
-                            #counter3 = 0
-                            #appendOrNo = 0
-                            #while(counter3 < len(recPicks)):
-                                #if(recPicks[counter3] == everything[pickTally]):
-                                    #appendOrNo = 1
-                                #counter3+=1
-                            #if(appendOrNo == 0):
-                                #recPicks.append(everything[pickTally])
-                    #if(len(recPicks) == 3):
-                        #stop = 1
-                        #counter2+=numNeeds
-                        #pickTally+=(len(everything))
-                    #counter2 += 1
-                #pickTally+=1
-            #return recPicks
-
+        #Gets three reccomended selections for a user pick and set of needs
         def getRecPicks(pickNumber, numOfNeeds):
             pickOverall = int(userInputPicks[pickNumber])
             pickTally = pickOverall
@@ -163,6 +137,7 @@ class ImportDataDialog(Toplevel):
             stop = 0
             counta = 0
             stopper = 0
+            #Goes through each poitional need in order and sees if there are any players with that position available in the 10 picks after and including the user pick
             while(counta<numNeeds):
                 counta2=0
                 picksAfter = 10
@@ -185,6 +160,7 @@ class ImportDataDialog(Toplevel):
                     stopper = 1
                     counta+=numNeeds
                 counta+=1
+            #If the previous loop does not produce three picks, this loop goes through the picks until it finds enough selections that fit under user needs or until it runs out of picks
             if(stopper == 0):
                 while(pickTally<len(everything)):
                     pos = (everything[pickTally].get("position")).lower()
@@ -208,6 +184,8 @@ class ImportDataDialog(Toplevel):
                         counter2 += 1
                     pickTally+=1
             pickTally = pickOverall
+            #If the previous two loops still do not produce three picks, this loop goes through the picks until it finds enough selections, regardless of the user needs,
+            #or until it runs out of picks
             if(len(recPicks) != 3):
                 while(pickTally<len(everything)):
                     if(len(recPicks) != 3):
@@ -227,6 +205,9 @@ class ImportDataDialog(Toplevel):
 
         selectedPlayers = []
 
+        #Runs the draft process using the list of user picks and list of user needs, going through each round providing three reccomened players
+        #and allowing the user to select from the three. Removes positions from the list of needs when a player with said position is selected by the user.
+        #At the end, prints a list of the selected user picks.
         def draft(listOfPicks, listOfNeeds):
             draftCount = 0
             reccoPicks = []
@@ -258,7 +239,8 @@ class ImportDataDialog(Toplevel):
                 print(selectedPlayers[counr2])
                 print("\n")
                 counr2+=1
-                
+
+        #Calls the draft function, thus running the code
         draft(userInputPicks, userInputNeeds)
 
 
