@@ -147,10 +147,104 @@ class ImportDataDialog(Toplevel):
             total_copy = total.copy()
             everything.append(total_copy)
             total.clear()
-        print("Done")
+        #print("Done")
         self.controller.draftPicks = everything
-        print(everything[0])
+        x=0
+        #while(x<70):
+           #print(everything[x])
+           #x+=1
+        #print(everything[217])
         #End of Seth's code
+
+        #Start of Thomas' Code
+        
+        userInputPicks = ["12","47","89","124","186","222","250"]
+        userInputNeeds = ["quarterback","defensiveend","runningback","defensiveback"
+                          ,"safety","safety","widereceiver"]
+        
+        #def getRecPicks(pickNumber):
+            #pickOverall = int(userInputPicks[pickNumber-1])
+            #pickTally = pickOverall
+            #recPicks = []
+            #stop = 0
+            #while(pickTally<len(everything)):
+                #pos = (everything[pickTally].get("position")).lower()
+                #numNeeds = len(userInputNeeds)
+                #counter2=0
+                #while(counter2 < numNeeds):
+                    #if(stop == 0):
+                        #if(pos == userInputNeeds[counter2]):
+                            #counter3 = 0
+                            #appendOrNo = 0
+                            #while(counter3 < len(recPicks)):
+                                #if(recPicks[counter3] == everything[pickTally]):
+                                    #appendOrNo = 1
+                                #counter3+=1
+                            #if(appendOrNo == 0):
+                                #recPicks.append(everything[pickTally])
+                    #if(len(recPicks) == 3):
+                        #stop = 1
+                        #counter2+=numNeeds
+                        #pickTally+=(len(everything))
+                    #counter2 += 1
+                #pickTally+=1
+            #return recPicks
+
+        def getRecPicks(pickNumber):
+            pickOverall = int(userInputPicks[pickNumber-1])
+            pickTally = pickOverall
+            recPicks = []
+            numNeeds = len(userInputNeeds)
+            stop = 0
+            counta = 0
+            stopper = 0
+            while(counta<numNeeds):
+                counta2=0
+                while(counta2<10):
+                    pos1 = (everything[pickOverall+counta2].get("position")).lower()
+                    if(pos1 == userInputNeeds[counta]):
+                        recPicks.append(everything[pickOverall+counta2])
+                        counta2+=10
+                    counta2+=1
+                if(len(recPicks) == 3):
+                    stopper = 1
+                    counta+=numNeeds
+                counta+=1
+            if(stopper == 0):
+                while(pickTally<len(everything)):
+                    pos = (everything[pickTally].get("position")).lower()
+                    numNeeds = len(userInputNeeds)
+                    counter2=0
+                    while(counter2 < numNeeds):
+                        if(stop == 0):
+                            if(pos == userInputNeeds[counter2]):
+                                counter3 = 0
+                                appendOrNo = 0
+                                while(counter3 < len(recPicks)):
+                                    if(recPicks[counter3] == everything[pickTally]):
+                                        appendOrNo = 1
+                                    counter3+=1
+                                if(appendOrNo == 0):
+                                    recPicks.append(everything[pickTally])
+                        if(len(recPicks) == 3):
+                            stop = 1
+                            counter2+=numNeeds
+                            pickTally+=(len(everything))
+                        counter2 += 1
+                    pickTally+=1
+            return recPicks
+
+        reccyPicks = getRecPicks(3)
+        xer = len(reccyPicks)
+        counr = 0
+        while(counr < xer):
+            print(reccyPicks[counr])
+            counr+=1
+                
+            
+
+
+        
     def get_draftPicks(self):
         return self.draftPicks
         
