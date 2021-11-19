@@ -1,25 +1,38 @@
 from tkinter import *
 import tkinter as tk
-import tkinter.simpledialog
+from tkinter.filedialog import askopenfilename
+from tkinter import messagebox
 from tkinter import ttk
 from datetime import datetime
 import cfbd
-root = Tk()
-frm = ttk.Frame(root, padding=10)
 draftPicks = None
 
 
-class MainWindow(Frame):
-    def __init__(self, master=None):
-        Frame.__init__(self, master)
-        self.grid()
-        self.master = master
-        self.csvButton = tk.Button(self, text="CSV")
-        self.csvButton.grid(column=2, row=1)
-        root.wait_window(ImportDataDialog(master=root, controller=self))
 
-        self.picksChoice = ttk.Treeview(columns=("position"))
-        self.picksChoice.grid(column=2, row=2)
+class MainWindow(Tk):
+    def __init__(self, master=None):
+        Tk.__init__(self, master)
+        self.master = master
+        self.columnconfigure(0, weight=50)
+        self.columnconfigure(1, weight=50)
+        self.columnconfigure(2, weight=100)
+        self.rowconfigure(0, weight=100)
+        self.rowconfigure(1, weight=10)
+
+        self.csvButton = tk.Button(self, text="CSV")
+        self.csvButton.grid(column=2, row=2, sticky="nsew")
+        self.addPick = tk.Button(self, text="+")
+        self.csvButton.grid(column=2, row=2, sticky="nsew")
+
+        self.wait_window(ImportDataDialog(master=self, controller=self))
+        try:
+            self.winfo_exists()
+        except:
+            exit()
+
+
+        self.picksChoice = ttk.Treeview(self, columns=("position"))
+        self.picksChoice.grid(column=0, row=0, columnspan=2, sticky="nsew")
         self.picksChoice.heading("#0", text="Name", anchor=tk.CENTER)
         self.picksChoice.heading("#1", text="Position", anchor=tk.CENTER)
         self.picksChoice.column('#0', stretch=tk.YES)
@@ -27,34 +40,36 @@ class MainWindow(Frame):
         self.picksChoice.bind("<Double-1>", self.onDoubleClick)
         for player in self.draftPicks:
             self.picksChoice.insert('', tk.END, text=player["name"] , values=player["position"])
-
-        self.addPick = self.csvButton = tk.Button(self, text="+")
-        self.csvButton.grid(column=2, row=1)
     
     def onDoubleClick(self, event):
-        selectItem = self.picksChoice.selection()[0]
-        selectColumn = self.picksChoice.identify_column(event.x)
-        itemTuple = self.picksChoice.bbox(selectItem, selectColumn)
-        offsetTuple = self.bbox(self.picksChoice)
-        finalTuple = [itemTuple[0], itemTuple[1], itemTuple[2], itemTuple[3]]
-        finalTuple[0] += offsetTuple[0]
-        finalTuple[1] += offsetTuple[1]
-        finalTuple[2] += offsetTuple[2]
-        finalTuple[3] += offsetTuple[3]
-        print(offsetTuple)
-
-        if (selectColumn == "#0"):
-            first_text = self.picksChoice.item(selectItem, "text")
+        self.selectedItem = (self.picksChoice.selection()[0], self.picksChoice.identify_column(event.x))
+        itemBBox = list(self.picksChoice.bbox(self.selectedItem[0], self.selectedItem[1]))
+        offsetX = self.picksChoice.winfo_x()
+        offsetY = self.picksChoice.winfo_y()
+        self.editEntry_Text = tk.StringVar()
+        self.editEntry = tk.Entry(self, textvariable=self.editEntry_Text)
+        if (self.selectedItem[1] == "#0"):
+            self.editEntry.insert(0, string = self.picksChoice.item(self.selectedItem[0], "text"))
+            offsetX += 15
+            itemBBox[2] -= 15
         else:
-            first_text = self.picksChoice.item(selectItem, "values")[0]
-        edit = tk.Entry(root, textvariable=first_text)
-        print(itemTuple)
-        edit.place(x = finalTuple[0],
-            y = finalTuple[1],
-            width=finalTuple[3] - finalTuple[0],
-            height=finalTuple[2] - finalTuple[1])
-        print("you clicked on", first_text)
-        
+            self.editEntry.insert(0, string = self.picksChoice.item(self.selectedItem[0], "values")[0])
+        self.editEntry.place(
+            x = itemBBox[0] + offsetX,
+            y = itemBBox[1] + offsetY,
+            width=itemBBox[2],
+            height=itemBBox[3])
+        self.editEntry.focus_force()
+        self.editEntry.bind('<Return>', func=self.finishedEntryEdit)
+        self.editEntry.bind('<FocusOut>', func=self.finishedEntryEdit)
+
+    def finishedEntryEdit(self, event):
+        if (self.selectedItem[1] == "#0"):
+            self.picksChoice.item(self.selectedItem[0], text=self.editEntry_Text.get())
+        else:
+            self.picksChoice.item(self.selectedItem[0], values=self.editEntry_Text.get())
+        self.editEntry.destroy()
+
 
 class ImportDataDialog(Toplevel):
     #User input for the picks that the user has as well as their top positional needs (Needs to be adjusted to be the actual user input)
@@ -65,6 +80,9 @@ class ImportDataDialog(Toplevel):
     def __init__(self, master, controller):
         Toplevel.__init__(self, master)
         self.controller = controller
+        self.master = master
+        self.protocol("WM_DELETE_WINDOW", self.closeEvent)
+        self.controller.draftPicks = None
         self.dlgFrame = Frame(self)
         self.dlgFrame.grid()
 
@@ -77,23 +95,31 @@ class ImportDataDialog(Toplevel):
         csvButton = tk.Button(self.dlgFrame, text="Database", command=self.databaseButton_Pressed)
         csvButton.grid(row=1, column=0)
 
-        self.transient(root)
+        self.transient(master)
         self.grab_set()
         
     def csvButton_Pressed(self):
-        self.destroy()
+        acceptedFiletypes = (
+        ('CSV files', '*.csv'),
+        ('All files', '*.*')
+        )
+        selectedFile = askopenfilename(
+            title = 'Select CSV file',
+            filetypes=acceptedFiletypes
+        )
+        self.importCSV(selectedFile = selectedFile)
 
     def databaseButton_Pressed(self):
-        root.config(cursor="wait")
+        self.config(cursor="wait")
         self.grabDatabase()
         self.importDatabase()
-        root.config(cursor="")
+        self.config(cursor="")
         self.grab_release()
-        self.destroy()
+        self.closeEvent()
         #Calls the draft function, thus running the code
         self.draft(self.userInputPicks, self.userInputNeeds)
 
-    def importCSV(self):
+    def importCSV(self, selectedFile):
         print("Not implemented")
 
     def grabDatabase(self):
@@ -157,7 +183,19 @@ class ImportDataDialog(Toplevel):
         #print("Done")
         self.controller.draftPicks = everything
         x=0
-        #End of Seth's code
+        #End of Seth's 
+        
+    def closeEvent(self):
+        if (self.controller.draftPicks is None):
+            result = messagebox.askretrycancel(
+                title="Nothing was selected",
+                message="No file or import option was selcted\nWould you like to try again?")
+            if (result == 'retry'):
+                self.__init__()
+            else:
+                self.master.destroy()
+        else:
+            self.destroy()
 
     #Start of Thomas' Code
     #Gets three reccomended selections for a user pick and set of needs
@@ -270,11 +308,7 @@ class ImportDataDialog(Toplevel):
             print(selectedPlayers[counr2])
             print("\n")
             counr2+=1
-    
-    def get_draftPicks(self):
-        return self.draftPicks
-        
-root.wm_title("IDK")
-frm.grid()
-mainWindow = MainWindow(master=frm)
-root.mainloop()
+
+mainWindow = MainWindow(None) 
+mainWindow.wm_title("IDK")
+mainWindow.mainloop()
