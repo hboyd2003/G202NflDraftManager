@@ -1,9 +1,11 @@
 from tkinter import *
 import tkinter as tk
 from tkinter.filedialog import askopenfilename
+from tkinter import font
 from tkinter import messagebox
 from tkinter import ttk
 from datetime import datetime
+from ctypes import windll
 import cfbd
 draftPicks = None
 
@@ -13,62 +15,91 @@ class MainWindow(Tk):
     def __init__(self, master=None):
         Tk.__init__(self, master)
         self.master = master
+        mainStyle = ttk.Style(self)
+
+        #Changes font and increases size
+        default_font = font.Font(family="Arial", size=16)
+        body_font = font.Font(family="Arial", size=14)
+        self.option_add("*Font", default_font)
+        font.nametofont("TkHeadingFont").configure(family="Arial", size=16)
+
+        #Tells windows to not scale the program making it look blurry
+        windll.shcore.SetProcessDpiAwareness(1)
+        #Scale items using scale factor setting in Windows
+        scalingFactor = windll.shcore.GetScaleFactorForDevice(0) / 100
+        self.tk.call( #Default scaling for all of tk, scales most things
+            'tk',
+            'scaling',
+            scalingFactor)
+        mainStyle.theme_use('clam')
+        print(body_font.metrics('linespace'))
+        print(body_font.metrics('linespace') * 2)
+        mainStyle.configure('Treeview', rowheight=int(body_font.metrics('linespace') * 1.6))
+
+
+        #Configures each column to a weight which incates how much of the windows it should take up
         self.columnconfigure(0, weight=50)
         self.columnconfigure(1, weight=50)
         self.columnconfigure(2, weight=100)
         self.rowconfigure(0, weight=100)
         self.rowconfigure(1, weight=10)
 
-        self.csvButton = tk.Button(self, text="CSV")
-        self.csvButton.grid(column=2, row=2, sticky="nsew")
         self.addPick = tk.Button(self, text="+")
-        self.csvButton.grid(column=2, row=2, sticky="nsew")
+        self.addPick.grid(column=2, row=2, sticky="nsew")
 
+        #Opens the import dialog and then confirms the app is still running
         self.wait_window(ImportDataDialog(master=self, controller=self))
         try:
             self.winfo_exists()
         except:
             exit()
 
-
+        #Sets up tree view
         self.picksChoice = ttk.Treeview(self, columns=("position"))
         self.picksChoice.grid(column=0, row=0, columnspan=2, sticky="nsew")
+        #Sets up treeview columns and heading
         self.picksChoice.heading("#0", text="Name", anchor=tk.CENTER)
         self.picksChoice.heading("#1", text="Position", anchor=tk.CENTER)
         self.picksChoice.column('#0', stretch=tk.YES)
         self.picksChoice.column('#1', stretch=tk.YES)
-        self.picksChoice.bind("<Double-1>", self.onDoubleClick)
+        self.picksChoice.bind("<Double-1>", self.onDoubleClick) #For editing an item
+        #Creates tag to change font of items
+        self.picksChoice.tag_configure("defaultFont", font=body_font)
         for player in self.draftPicks:
-            self.picksChoice.insert('', tk.END, text=player["name"] , values=player["position"])
+            self.picksChoice.insert('', tk.END, text=player["name"] , values=player["position"], tags="defaultFont")
     
     def onDoubleClick(self, event):
-        self.selectedItem = (self.picksChoice.selection()[0], self.picksChoice.identify_column(event.x))
-        itemBBox = list(self.picksChoice.bbox(self.selectedItem[0], self.selectedItem[1]))
-        offsetX = self.picksChoice.winfo_x()
-        offsetY = self.picksChoice.winfo_y()
+        self.selectedItem = (self.picksChoice.selection()[0], self.picksChoice.identify_column(event.x)) #Gets specific item based on press location and selection
+        itemBBox = list(self.picksChoice.bbox(self.selectedItem[0], self.selectedItem[1])) #Item location relative to treeview
+        offset = (self.picksChoice.winfo_x(), self.picksChoice.winfo_y()) #Gets treeview coords to offset with
         self.editEntry_Text = tk.StringVar()
         self.editEntry = tk.Entry(self, textvariable=self.editEntry_Text)
-        if (self.selectedItem[1] == "#0"):
+
+        #Checks if selected item in column 0 or 1
+        if (self.selectedItem[1] == "#0"): #Column 0
             self.editEntry.insert(0, string = self.picksChoice.item(self.selectedItem[0], "text"))
-            offsetX += 15
+            offset[0] += 15 #Offset for column 0 padding
             itemBBox[2] -= 15
-        else:
+        else: #Column 1
             self.editEntry.insert(0, string = self.picksChoice.item(self.selectedItem[0], "values")[0])
         self.editEntry.place(
-            x = itemBBox[0] + offsetX,
-            y = itemBBox[1] + offsetY,
+            x = itemBBox[0] + offset[0],
+            y = itemBBox[1] + offset[1],
             width=itemBBox[2],
             height=itemBBox[3])
+
+        #Forces curser to be in entrybox
         self.editEntry.focus_force()
+        #When you exit the entrybox
         self.editEntry.bind('<Return>', func=self.finishedEntryEdit)
         self.editEntry.bind('<FocusOut>', func=self.finishedEntryEdit)
 
-    def finishedEntryEdit(self, event):
-        if (self.selectedItem[1] == "#0"):
+    def finishedEntryEdit(self, event): #When you exit the entrybox
+        if (self.selectedItem[1] == "#0"): #Sets text based on column
             self.picksChoice.item(self.selectedItem[0], text=self.editEntry_Text.get())
         else:
             self.picksChoice.item(self.selectedItem[0], values=self.editEntry_Text.get())
-        self.editEntry.destroy()
+        self.editEntry.destroy() #Deletes the entrybox
 
 
 class ImportDataDialog(Toplevel):
@@ -83,16 +114,16 @@ class ImportDataDialog(Toplevel):
         self.master = master
         self.protocol("WM_DELETE_WINDOW", self.closeEvent)
         self.controller.draftPicks = None
-        self.dlgFrame = Frame(self)
-        self.dlgFrame.grid()
 
-        importLabel = tk.Label(self.dlgFrame, text="Choose import location")
-        importLabel.grid(row=0, column=0)
+        self.grid()
 
-        databaseButton = tk.Button(self.dlgFrame, text="CSV", command=self.csvButton_Pressed)
+        importLabel = tk.Label(self, text="Choose import location")
+        importLabel.grid(row=0, column=0, columnspan=2)
+
+        databaseButton = tk.Button(self, text="CSV", command=self.csvButton_Pressed)
         databaseButton.grid(row=1, column=1)
         
-        csvButton = tk.Button(self.dlgFrame, text="Database", command=self.databaseButton_Pressed)
+        csvButton = tk.Button(self, text="Database", command=self.databaseButton_Pressed)
         csvButton.grid(row=1, column=0)
 
         self.transient(master)
