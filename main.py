@@ -24,6 +24,25 @@ from ctypes import windll
 import cfbd
 draftPicks = None
 
+positionDictionary = {
+    "Wide Receiver": ("quarterback", "wr"),
+    "Quarterback": ("widereceiver", "qb"),
+    "Running Back": ("runningback", "rb"),
+    "Tight End": ("tightend", "te"),
+    "Offensive Tackle": ("offensivetackle", "ot"),
+    "Cornerback": ("cornerback", "cb"),
+    "Inside Linebacker": ("insidelinebacker", "ilb"),
+    "Offensive Guard": ("offensiveguard", "og"),
+    "Outside Linebacker": ("outsidelinebacker", "olb"),
+    "Defensive End": ("defensiveend", "de"),
+    "Safety": ("safety", "s"),
+    "center": ("center", "c"),
+    "Place Kicker": ("placekicker", "pk"),
+    "Defensive Tackle": ("defensivetackle", "dt"),
+    "Long Snapper": ("longsnapper", "ls"),
+    "Punter": ("punter", "p")
+}
+
 
 
 class MainWindow(Tk):
@@ -56,11 +75,19 @@ class MainWindow(Tk):
         self.columnconfigure(0, weight=50)
         self.columnconfigure(1, weight=50)
         self.columnconfigure(2, weight=100)
-        self.rowconfigure(0, weight=100)
-        self.rowconfigure(1, weight=10)
+        self.rowconfigure(0, weight=5)
+        self.rowconfigure(1, weight=90)
+        self.rowconfigure(2, weight=5)
 
-        self.addPick = tk.Button(self, text="+")
-        self.addPick.grid(column=2, row=2, sticky="nsew")
+        self.roundLabel = tk.Label(self, text="Round: ")
+        self.roundLabel.grid(column=0, row=0)
+
+        self.roundEntry_Text = tk.StringVar()
+        self.roundEntry = tk.Entry(self, textvariable=self.roundEntry_Text)
+        self.roundEntry.grid(column=1, row=0)
+
+        self.addPick = tk.Button(self, text="+", command=self.addPick)
+        self.addPick.grid(column=1, row=2, sticky="nsew")
 
         #Opens the import dialog and then confirms the app is still running
         self.wait_window(ImportDataDialog(master=self, controller=self))
@@ -69,9 +96,9 @@ class MainWindow(Tk):
         except:
             exit()
 
-        #Sets up tree view
+        #Sets up pick player tree view
         self.picksChoice = ttk.Treeview(self, columns=("position"))
-        self.picksChoice.grid(column=0, row=0, columnspan=2, sticky="nsew")
+        self.picksChoice.grid(column=0, row=1, columnspan=2, sticky="nsew")
         #Sets up treeview columns and heading
         self.picksChoice.heading("#0", text="Name", anchor=tk.CENTER)
         self.picksChoice.heading("#1", text="Position", anchor=tk.CENTER)
@@ -80,13 +107,16 @@ class MainWindow(Tk):
         self.picksChoice.bind("<Double-1>", self.onDoubleClick) #For editing an item
         #Creates tag to change font of items
         self.picksChoice.tag_configure("defaultFont", font=body_font)
-        for player in self.draftPicks:
-            self.picksChoice.insert('', tk.END, text=player["name"] , values=player["position"], tags="defaultFont")
+        #Generates rest of playerposition dictionary for treeview data validation
+        for key in positionDictionary.keys():
+            key.replace(" ", "")
+        #for player in self.draftPicks:
+        #    self.picksChoice.insert('', tk.END, text=player["name"] , values=player["position"], tags="defaultFont")
     
     def onDoubleClick(self, event):
         self.selectedItem = (self.picksChoice.selection()[0], self.picksChoice.identify_column(event.x)) #Gets specific item based on press location and selection
         itemBBox = list(self.picksChoice.bbox(self.selectedItem[0], self.selectedItem[1])) #Item location relative to treeview
-        offset = (self.picksChoice.winfo_x(), self.picksChoice.winfo_y()) #Gets treeview coords to offset with
+        offset = [self.picksChoice.winfo_x(), self.picksChoice.winfo_y()] #Gets treeview coords to offset with
         self.editEntry_Text = tk.StringVar()
         self.editEntry = tk.Entry(self, textvariable=self.editEntry_Text)
 
@@ -109,12 +139,28 @@ class MainWindow(Tk):
         self.editEntry.bind('<Return>', func=self.finishedEntryEdit)
         self.editEntry.bind('<FocusOut>', func=self.finishedEntryEdit)
 
+    def addPick(self):
+        self.picksChoice.insert('', tk.END, text="" , values=[""], tags="defaultFont")
+
+
     def finishedEntryEdit(self, event): #When you exit the entrybox
         if (self.selectedItem[1] == "#0"): #Sets text based on column
             self.picksChoice.item(self.selectedItem[0], text=self.editEntry_Text.get())
+            self.editEntry.destroy() #Deletes the entrybox
         else:
-            self.picksChoice.item(self.selectedItem[0], values=self.editEntry_Text.get())
-        self.editEntry.destroy() #Deletes the entrybox
+            positionMatched = FALSE
+            for position in positionDictionary.items():
+                if ((self.editEntry_Text.get().lower() == str.lower(position[0])) #Matches the display name (key)
+                or (self.editEntry_Text.get().lower() in position[1])): #Matches alternative names
+                    self.picksChoice.item(self.selectedItem[0], values=[position[0]]) #Sets the box to the display name (key)
+                    positionMatched = TRUE
+                    break
+            self.editEntry.destroy() #Deletes the entrybox
+            if (positionMatched == FALSE): #If no match was found
+                messagebox.showwarning(
+                    message=
+                        self.editEntry_Text.get().lower()
+                        + " is not a valid position.")
 
 
 class ImportDataDialog(Toplevel):
@@ -231,7 +277,7 @@ class ImportDataDialog(Toplevel):
         x=0
         #End of Seth's 
         
-    def closeEvent(self):
+    def closeEvent(self): #When theres no import or file selected when closing
         if (self.controller.draftPicks is None):
             result = messagebox.askretrycancel(
                 title="Nothing was selected",
