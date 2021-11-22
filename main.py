@@ -20,7 +20,11 @@ from tkinter import font
 from tkinter import messagebox
 from tkinter import ttk
 from datetime import datetime
-from ctypes import windll
+from sys import platform
+try:
+    from ctypes import windll
+except ImportError:
+    from AppKit import NSScreen
 import cfbd
 draftPicks = None
 
@@ -49,33 +53,22 @@ class MainWindow(Tk):
     def __init__(self, master=None):
         Tk.__init__(self, master)
         self.master = master
-        mainStyle = ttk.Style(self)
+        self.mainStyle = ttk.Style(self)
 
         #Changes font and increases size
-        default_font = font.Font(family="Arial", size=16)
-        body_font = font.Font(family="Arial", size=14)
-        self.option_add("*Font", default_font)
+        self.default_font = font.Font(family="Arial", size=16)
+        self.body_font = font.Font(family="Arial", size=14)
+        self.option_add("*Font", self.default_font)
         font.nametofont("TkHeadingFont").configure(family="Arial", size=16)
 
-        #Tells windows to not scale the program making it look blurry
-        windll.shcore.SetProcessDpiAwareness(1)
-        #Scale items using scale factor setting in Windows
-        scalingFactor = windll.shcore.GetScaleFactorForDevice(0) / 100
-        self.tk.call( #Default scaling for all of tk, scales most things
-            'tk',
-            'scaling',
-            scalingFactor)
-        mainStyle.theme_use('clam')
-        print(body_font.metrics('linespace'))
-        print(body_font.metrics('linespace') * 2)
-        mainStyle.configure('Treeview', rowheight=int(body_font.metrics('linespace') * 1.6))
-
+        self.windowsScaleSetup()
 
         #Configures each column to a weight which incates how much of the windows it should take up
-        self.columnconfigure(0, weight=50)
-        self.columnconfigure(1, weight=50)
-        self.columnconfigure(2, weight=100)
-        self.rowconfigure(0, weight=5)
+        self.columnconfigure(0, weight=25) #Round label and half of player pick treeview
+        self.columnconfigure(1, weight=25) #Round entrybox, half of player pick treeview and + button
+        self.columnconfigure(2, weight=5) #Spacer
+        self.columnconfigure(3, weight=45) #Suggested pick players treeview
+        self.rowconfigure(0, weight=5) 
         self.rowconfigure(1, weight=90)
         self.rowconfigure(2, weight=5)
 
@@ -106,19 +99,41 @@ class MainWindow(Tk):
         self.picksChoice.column('#1', stretch=tk.YES)
         self.picksChoice.bind("<Double-1>", self.onDoubleClick) #For editing an item
         #Creates tag to change font of items
-        self.picksChoice.tag_configure("defaultFont", font=body_font)
+        self.picksChoice.tag_configure("defaultFont", font=self.body_font)
         #Generates rest of playerposition dictionary for treeview data validation
         for key in positionDictionary.keys():
             key.replace(" ", "")
         #for player in self.draftPicks:
         #    self.picksChoice.insert('', tk.END, text=player["name"] , values=player["position"], tags="defaultFont")
+
+    def windowsScaleSetup(self): #Sets up scaling for different resolution displays
+        print(platform)
+        if (platform == "win32"):
+            #Tells windows to not scale the program making it look blurry
+            windll.shcore.SetProcessDpiAwareness(1)
+            #Scale items using scale factor setting in Windows
+            scalingFactor = windll.shcore.GetScaleFactorForDevice(0) / 100
+        else:
+            scalingFactor = Screen.backingScaleFactor()
+        self.tk.call( #Default scaling for all of tk, scales most things
+            'tk',
+            'scaling',
+            scalingFactor)
+        self.mainStyle.theme_use('clam')
+        print(self.body_font.metrics('linespace'))
+        print(self.body_font.metrics('linespace') * 2)
+        self.mainStyle.configure('Treeview', rowheight=int(self.body_font.metrics('linespace') * 1.6))
     
-    def onDoubleClick(self, event):
-        self.selectedItem = (self.picksChoice.selection()[0], self.picksChoice.identify_column(event.x)) #Gets specific item based on press location and selection
-        itemBBox = list(self.picksChoice.bbox(self.selectedItem[0], self.selectedItem[1])) #Item location relative to treeview
+    def onDoubleClick(self, event): #Double click on the player choice tree view
+        try:
+            self.selectedItem = (self.picksChoice.selection()[0], self.picksChoice.identify_column(event.x)) #Gets specific item based on press location and selection
+        except(IndexError): #For when the user clicks on blank space
+            return
+
+        itemBBox = list(self.picksChoice.bbox(self.selectedItem[0], self.selectedItem[1])) #Item bounding box relative to treeview
         offset = [self.picksChoice.winfo_x(), self.picksChoice.winfo_y()] #Gets treeview coords to offset with
         self.editEntry_Text = tk.StringVar()
-        self.editEntry = tk.Entry(self, textvariable=self.editEntry_Text)
+        self.editEntry = tk.Entry(self, textvariable = self.editEntry_Text, font = self.body_font)
 
         #Checks if selected item in column 0 or 1
         if (self.selectedItem[1] == "#0"): #Column 0
