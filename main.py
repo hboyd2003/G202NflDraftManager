@@ -73,14 +73,15 @@ class MainWindow(Tk):
         self.rowconfigure(2, weight=5)
 
         #Label for the round entrybox
-        self.roundLabel = ttk.Label(self, text="Round: ")
-        self.roundLabel.grid(column=0, row=0)
+        self.pickLabel = ttk.Label(self, text="Round: ")
+        self.pickLabel.grid(column=0, row=0)
 
         #Round entry box
-        self.roundEntry_Text = tk.StringVar()
-        self.roundEntry = ttk.Entry(self, textvariable=self.roundEntry_Text)
-        self.roundEntry.grid(column=1, row=0)
+        self.pickEntry_Text = tk.StringVar()
+        self.pickEntry = ttk.Entry(self, textvariable=self.pickEntry_Text)
+        self.pickEntry.grid(column=1, row=0)
 
+        self.goButton = ttk.Button(self, text="GO!", command=self.goButton_Pressed)
 
         self.addPick = ttk.Button(self, text="+", command=self.addPick)
         self.addPick.grid(column=1, row=2, sticky="nsew")
@@ -93,6 +94,8 @@ class MainWindow(Tk):
             exit()
 
         self.treeViewsSetup()
+        #Calls the draft function, thus running the code
+        #self.draft(self.userInputPicks, self.userInputNeeds)
 
     def scaleSetup(self): #Sets up scaling for different resolution displays
         if (platform == "win32"):
@@ -108,20 +111,24 @@ class MainWindow(Tk):
             scalingFactor * 1.2)
         self.mainStyle.configure('Treeview', rowheight=int(self.body_font.metrics('linespace') * 1.6))
     
+    def goButton_Pressed(self):
+        userInputPicks = []
+        #for item in self.picksChoice.get_children():
+        #    self.picksChoice.item(item).
+        self.draft(self.userInputPicks, self.userInputNeeds)
+
     def treeViewsSetup(self):
         #Sets up pick player tree view
-        self.picksChoice = ttk.Treeview(self, columns=("position"))
+        self.picksChoice = ttk.Treeview(self)
         self.picksChoice.grid(column=0, row=1, columnspan=2, sticky="nsew")
         #Sets up treeview columns and heading
-        self.picksChoice.heading("#0", text="Name", anchor=tk.CENTER)
-        self.picksChoice.heading("#1", text="Position", anchor=tk.CENTER)
+        self.picksChoice.heading("#0", text="Position", anchor=tk.CENTER)
         self.picksChoice.column('#0', stretch=tk.YES)
-        self.picksChoice.column('#1', stretch=tk.YES)
         self.picksChoice.bind("<Double-1>", self.onDoubleClick) #For editing an item
         #Creates tag to change font of items
         self.picksChoice.tag_configure("defaultFont", font=self.body_font)
-        for player in self.draftPicks:
-            self.picksChoice.insert('', tk.END, text=player["name"] , values=player["position"], tags="defaultFont")
+        #for player in self.draftPicks:
+        #    self.picksChoice.insert('', tk.END, text=player["name"] , values=player["position"], tags="defaultFont")
 
         #Sets up pick player tree view
         self.suggestedPicks = ttk.Treeview(self,
@@ -158,12 +165,10 @@ class MainWindow(Tk):
         self.editEntry = ttk.Entry(self, textvariable = self.editEntry_Text, font = self.body_font)
 
         #Checks if selected item in column 0 or 1
-        if (self.selectedItem[1] == "#0"): #Column 0
-            self.editEntry.insert(0, string = self.picksChoice.item(self.selectedItem[0], "text"))
-            offset[0] += 15 #Offset for column 0 padding
-            itemBBox[2] -= 15
-        else: #Column 1
-            self.editEntry.insert(0, string = self.picksChoice.item(self.selectedItem[0], "values")[0])
+        self.editEntry.insert(0, string = self.picksChoice.item(self.selectedItem[0], "text"))
+        offset[0] += 15 #Offset for column 0 padding
+        itemBBox[2] -= 15
+
         self.editEntry.place(
             x = itemBBox[0] + offset[0],
             y = itemBBox[1] + offset[1],
@@ -177,142 +182,22 @@ class MainWindow(Tk):
         self.editEntry.bind('<FocusOut>', func=self.finishedEntryEdit)
 
     def addPick(self):
-        self.picksChoice.insert('', tk.END, text="" , values=[""], tags="defaultFont")
+        self.picksChoice.insert('', tk.END, text="", tags="defaultFont")
 
     def finishedEntryEdit(self, event): #When you exit the entrybox
-        if (self.selectedItem[1] == "#0"): #Sets text based on column
-            self.picksChoice.item(self.selectedItem[0], text=self.editEntry_Text.get())
-            self.editEntry.destroy() #Deletes the entrybox
-        else:
-            positionMatched = FALSE
-            for position in positionDictionary.items():
-                if ((self.editEntry_Text.get().lower() == str.lower(position[0])) #Matches the display name (key)
-                or (self.editEntry_Text.get().lower() in position[1])): #Matches alternative names
-                    self.picksChoice.item(self.selectedItem[0], values=[position[0]]) #Sets the box to the display name (key)
-                    positionMatched = TRUE
-                    break
-            self.editEntry.destroy() #Deletes the entrybox
-            if (positionMatched == FALSE): #If no match was found
-                messagebox.showwarning(
-                    message=
-                        self.editEntry_Text.get().lower()
-                        + " is not a valid position.")
-
-
-class ImportDataDialog(Toplevel):
-    #User input for the picks that the user has as well as their top positional needs (Needs to be adjusted to be the actual user input)
-    userInputPicks = ["12","47","89","124","186","222","256"]
-    userInputNeeds = ["quarterback","defensiveend","runningback","cornerback"
-                        ,"safety","safety","widereceiver"]
-
-    def __init__(self, master):
-        Toplevel.__init__(self, master)
-        self.master = master
-        self.protocol("WM_DELETE_WINDOW", self.closeEvent)
-        self.master.draftPicks = None
-
-        self.grid()
-
-        importLabel = ttk.Label(self, text="Choose import location")
-        importLabel.grid(row=0, column=0, columnspan=2)
-
-        databaseButton = ttk.Button(self, text="CSV", command=self.csvButton_Pressed)
-        databaseButton.grid(row=1, column=1)
-        
-        csvButton = ttk.Button(self, text="Database", command=self.databaseButton_Pressed)
-        csvButton.grid(row=1, column=0)
-
-        self.transient(master)
-        self.grab_set()
-        
-    def csvButton_Pressed(self):
-        acceptedFiletypes = (
-        ('CSV files', '*.csv'),
-        ('All files', '*.*')
-        )
-        selectedFile = askopenfilename(
-            title = 'Select CSV file',
-            filetypes=acceptedFiletypes
-        )
-
-        if (selectedFile == ""): #If no file was selected
-            result = messagebox.askretrycancel( #User can either exit CSV choice or choose again
-                title="Nothing was selected",
-                message="No file was selcted\nWould you like to try again?")
-            if (result): #If the press trey
-                self.csvButton_Pressed()
-            else:
-                return
-        else:
-            self.importCSV(selectedFile = selectedFile)
-
-    def databaseButton_Pressed(self):
-        self.config(cursor="wait")
-        self.grabDatabase()
-        self.importDatabase()
-        self.config(cursor="")
-        self.grab_release()
-        self.closeEvent()
-        #Calls the draft function, thus running the code
-        self.draft(self.userInputPicks, self.userInputNeeds)
-
-    def importCSV(self, selectedFile):
-        print("Not implemented")
-
-    def grabDatabase(self):
-        configuration = cfbd.Configuration()
-        configuration.api_key['Authorization'] = 'PrEoN+4gLLbOFbNh9Fevv0hRyYTBNVmQ3DLnhwvTQn06OJqatwpxvTVhR5nLrjFx'
-        configuration.api_key_prefix['Authorization'] = 'Bearer'
-        api_instance = cfbd.DraftApi(cfbd.ApiClient(configuration))
-        self.draftPicksRaw = api_instance.get_draft_picks(year=datetime.now().year)
-        return
-
-    def importDatabase(self):
-        #Start of Seth's code
-        listy = []
-        #puts everything in game in a list and makes each item a string
-        draftPicksTemp = str(self.draftPicksRaw)
-        itemEnd = 0
-        while(itemEnd < len(draftPicksTemp) - 2):
-            itemStart = draftPicksTemp.find("{", itemEnd)
-            itemEnd = draftPicksTemp.find("}", itemEnd + 1)
-            itemTempEnd = itemEnd
-            indentCount = draftPicksTemp.count("{", itemStart, itemEnd)
-            i = 1
-
-            while i < indentCount:
-                itemEnd = draftPicksTemp.find("}", itemEnd + 1)
-                i += 1
-            listy.append(draftPicksTemp[itemStart + 1:itemEnd])
-            #print("Appended")
-
-            #draftPicksTemp = draftPicksTemp[itemEnd:]
-        #for item in self.draftPicksRaw:
-        #    item = str(item)
-        #    thing = re.split(':|\n', item)
-        #    listy.append(thing)
-        
-        everything = []
-        #puts every item in a dictionary
-        for item in listy:
-            lines = item.splitlines()
-            draftPick = {}
-            for line in lines:
-                line = line.replace("'", "")
-                line = line.replace(" ", "")
-                line = line.replace(",", "")
-                line = line.replace("}", "")
-                line = line.replace("{", "")
-                lineSplit = line.split(":")
-                draftPick[lineSplit[0]] = lineSplit[1]
-            everything.append(draftPick)
-        self.master.draftPicks = everything
-        #End of Seth's 
-        
-    def closeEvent(self): #When theres no import or file selected when closing
-        self.destroy()
-        if (self.master.draftPicks is None):
-            self.master.destroy()
+        positionMatched = FALSE
+        for position in positionDictionary.items():
+            if ((self.editEntry_Text.get().lower() == str.lower(position[0])) #Matches the display name (key)
+            or (self.editEntry_Text.get().lower() in position[1])): #Matches alternative names
+                self.picksChoice.item(self.selectedItem[0], text=[position[0]]) #Sets the box to the display name (key)
+                positionMatched = TRUE
+                break
+        self.editEntry.destroy() #Deletes the entrybox
+        if (positionMatched == FALSE): #If no match was found
+            messagebox.showwarning(
+                message=
+                    self.editEntry_Text.get().lower()
+                    + " is not a valid position.")
 
     #Start of Thomas' Code
     #Gets three reccomended selections for a user pick and set of needs
@@ -425,6 +310,120 @@ class ImportDataDialog(Toplevel):
             print(selectedPlayers[counr2])
             print("\n")
             counr2+=1
+
+
+class ImportDataDialog(Toplevel):
+    #User input for the picks that the user has as well as their top positional needs (Needs to be adjusted to be the actual user input)
+    userInputPicks = ["12","47","89","124","186","222","256"]
+    userInputNeeds = ["quarterback","defensiveend","runningback","cornerback"
+                        ,"safety","safety","widereceiver"]
+
+    def __init__(self, master):
+        Toplevel.__init__(self, master)
+        self.master = master
+        self.protocol("WM_DELETE_WINDOW", self.closeEvent)
+        self.master.draftPicks = None
+
+        self.grid()
+
+        importLabel = ttk.Label(self, text="Choose import location")
+        importLabel.grid(row=0, column=0, columnspan=2)
+
+        databaseButton = ttk.Button(self, text="CSV", command=self.csvButton_Pressed)
+        databaseButton.grid(row=1, column=1)
+        
+        csvButton = ttk.Button(self, text="Database", command=self.databaseButton_Pressed)
+        csvButton.grid(row=1, column=0)
+
+        self.transient(master)
+        self.grab_set()
+        
+    def csvButton_Pressed(self):
+        acceptedFiletypes = (
+        ('CSV files', '*.csv'),
+        ('All files', '*.*')
+        )
+        selectedFile = askopenfilename(
+            title = 'Select CSV file',
+            filetypes=acceptedFiletypes
+        )
+
+        if (selectedFile == ""): #If no file was selected
+            result = messagebox.askretrycancel( #User can either exit CSV choice or choose again
+                title="Nothing was selected",
+                message="No file was selcted\nWould you like to try again?")
+            if (result): #If the press trey
+                self.csvButton_Pressed()
+            else:
+                return
+        else:
+            self.importCSV(selectedFile = selectedFile)
+
+    def databaseButton_Pressed(self):
+        self.config(cursor="wait")
+        self.grabDatabase()
+        self.importDatabase()
+        self.config(cursor="")
+        self.grab_release()
+        self.closeEvent()
+
+    def importCSV(self, selectedFile):
+        print("Not implemented")
+
+    def grabDatabase(self):
+        configuration = cfbd.Configuration()
+        configuration.api_key['Authorization'] = 'PrEoN+4gLLbOFbNh9Fevv0hRyYTBNVmQ3DLnhwvTQn06OJqatwpxvTVhR5nLrjFx'
+        configuration.api_key_prefix['Authorization'] = 'Bearer'
+        api_instance = cfbd.DraftApi(cfbd.ApiClient(configuration))
+        self.draftPicksRaw = api_instance.get_draft_picks(year=datetime.now().year)
+        return
+
+    def importDatabase(self):
+        #Start of Seth's code
+        listy = []
+        #puts everything in game in a list and makes each item a string
+        draftPicksTemp = str(self.draftPicksRaw)
+        itemEnd = 0
+        while(itemEnd < len(draftPicksTemp) - 2):
+            itemStart = draftPicksTemp.find("{", itemEnd)
+            itemEnd = draftPicksTemp.find("}", itemEnd + 1)
+            itemTempEnd = itemEnd
+            indentCount = draftPicksTemp.count("{", itemStart, itemEnd)
+            i = 1
+
+            while i < indentCount:
+                itemEnd = draftPicksTemp.find("}", itemEnd + 1)
+                i += 1
+            listy.append(draftPicksTemp[itemStart + 1:itemEnd])
+            #print("Appended")
+
+            #draftPicksTemp = draftPicksTemp[itemEnd:]
+        #for item in self.draftPicksRaw:
+        #    item = str(item)
+        #    thing = re.split(':|\n', item)
+        #    listy.append(thing)
+        
+        everything = []
+        #puts every item in a dictionary
+        for item in listy:
+            lines = item.splitlines()
+            draftPick = {}
+            for line in lines:
+                line = line.replace("'", "")
+                line = line.replace(" ", "")
+                line = line.replace(",", "")
+                line = line.replace("}", "")
+                line = line.replace("{", "")
+                lineSplit = line.split(":")
+                draftPick[lineSplit[0]] = lineSplit[1]
+            everything.append(draftPick)
+        self.master.draftPicks = everything
+        #End of Seth's 
+        
+    def closeEvent(self): #When theres no import or file selected when closing
+        self.destroy() 
+        if (self.master.draftPicks is None):
+            self.master.destroy()
 
 mainWindow = MainWindow(None) 
 mainWindow.wm_title("IDK")
