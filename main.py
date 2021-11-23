@@ -26,8 +26,6 @@ try:
 except ImportError:
     from AppKit import NSScreen
 import cfbd
-draftPicks = None
-
 positionDictionary = {
     "Wide Receiver": ("widereceiver", "wr"),
     "Quarterback": ("Quarterback", "qb"),
@@ -46,8 +44,6 @@ positionDictionary = {
     "Long Snapper": ("longsnapper", "ls"),
     "Punter": ("punter", "p")
 }
-
-
 
 class MainWindow(Tk):
     def __init__(self, master=None):
@@ -96,22 +92,7 @@ class MainWindow(Tk):
         except:
             exit()
 
-        #Sets up pick player tree view
-        self.picksChoice = ttk.Treeview(self, columns=("position"))
-        self.picksChoice.grid(column=0, row=1, columnspan=2, sticky="nsew")
-        #Sets up treeview columns and heading
-        self.picksChoice.heading("#0", text="Name", anchor=tk.CENTER)
-        self.picksChoice.heading("#1", text="Position", anchor=tk.CENTER)
-        self.picksChoice.column('#0', stretch=tk.YES)
-        self.picksChoice.column('#1', stretch=tk.YES)
-        self.picksChoice.bind("<Double-1>", self.onDoubleClick) #For editing an item
-        #Creates tag to change font of items
-        self.picksChoice.tag_configure("defaultFont", font=self.body_font)
-        #Generates rest of playerposition dictionary for treeview data validation
-        for key in positionDictionary.keys():
-            key.replace(" ", "")
-        #for player in self.draftPicks:
-        #    self.picksChoice.insert('', tk.END, text=player["name"] , values=player["position"], tags="defaultFont")
+        self.treeViewsSetup()
 
     def scaleSetup(self): #Sets up scaling for different resolution displays
         if (platform == "win32"):
@@ -126,6 +107,44 @@ class MainWindow(Tk):
             'scaling',
             scalingFactor * 1.2)
         self.mainStyle.configure('Treeview', rowheight=int(self.body_font.metrics('linespace') * 1.6))
+    
+    def treeViewsSetup(self):
+        #Sets up pick player tree view
+        self.picksChoice = ttk.Treeview(self, columns=("position"))
+        self.picksChoice.grid(column=0, row=1, columnspan=2, sticky="nsew")
+        #Sets up treeview columns and heading
+        self.picksChoice.heading("#0", text="Name", anchor=tk.CENTER)
+        self.picksChoice.heading("#1", text="Position", anchor=tk.CENTER)
+        self.picksChoice.column('#0', stretch=tk.YES)
+        self.picksChoice.column('#1', stretch=tk.YES)
+        self.picksChoice.bind("<Double-1>", self.onDoubleClick) #For editing an item
+        #Creates tag to change font of items
+        self.picksChoice.tag_configure("defaultFont", font=self.body_font)
+        for player in self.draftPicks:
+            self.picksChoice.insert('', tk.END, text=player["name"] , values=player["position"], tags="defaultFont")
+
+        #Sets up pick player tree view
+        self.suggestedPicks = ttk.Treeview(self,
+            columns=("college", "position", "height", "weight", "pre-grade", "overall"))
+        self.suggestedPicks.grid(column=4, row=1, columnspan=2, sticky="nsew")
+        #Sets up treeview columns and heading
+        self.suggestedPicks.heading("#0", text="Name", anchor=tk.CENTER)
+        self.suggestedPicks.heading("#1", text="College", anchor=tk.CENTER)
+        self.suggestedPicks.heading("#2", text="Position", anchor=tk.CENTER)
+        self.suggestedPicks.heading("#3", text="Height", anchor=tk.CENTER)
+        self.suggestedPicks.heading("#4", text="Weight", anchor=tk.CENTER)
+        self.suggestedPicks.heading("#5", text="Pre-Grade", anchor=tk.CENTER)
+        self.suggestedPicks.heading("#6", text="Overall", anchor=tk.CENTER)
+        self.suggestedPicks.column('#0', stretch=tk.YES)
+        self.suggestedPicks.column('#1', stretch=tk.YES)
+        self.suggestedPicks.column('#2', stretch=tk.YES)
+        self.suggestedPicks.column('#3', stretch=tk.YES)
+        self.suggestedPicks.column('#4', stretch=tk.YES)
+        self.suggestedPicks.column('#5', stretch=tk.YES)
+        self.suggestedPicks.column('#6', stretch=tk.YES)
+        self.suggestedPicks.bind("<Double-1>", self.onDoubleClick) #For editing an item
+        #Creates tag to change font of items
+        self.suggestedPicks.tag_configure("defaultFont", font=self.body_font)
     
     def onDoubleClick(self, event): #Double click on the player choice tree view
         try:
@@ -159,7 +178,6 @@ class MainWindow(Tk):
 
     def addPick(self):
         self.picksChoice.insert('', tk.END, text="" , values=[""], tags="defaultFont")
-
 
     def finishedEntryEdit(self, event): #When you exit the entrybox
         if (self.selectedItem[1] == "#0"): #Sets text based on column
@@ -252,56 +270,43 @@ class ImportDataDialog(Toplevel):
     def importDatabase(self):
         #Start of Seth's code
         listy = []
-        import re
         #puts everything in game in a list and makes each item a string
-        for line in self.draftPicksRaw:
-            line = str(line)
-            thing = re.split(':|\n', line)
-            listy.append(thing)
-        
-        #print(games[0])
-        #print(listy[0])
-        total = {}
-        everything = []
+        draftPicksTemp = str(self.draftPicksRaw)
+        itemEnd = 0
+        while(itemEnd < len(draftPicksTemp) - 2):
+            itemStart = draftPicksTemp.find("{", itemEnd)
+            itemEnd = draftPicksTemp.find("}", itemEnd + 1)
+            itemTempEnd = itemEnd
+            indentCount = draftPicksTemp.count("{", itemStart, itemEnd)
+            i = 1
 
+            while i < indentCount:
+                itemEnd = draftPicksTemp.find("}", itemEnd + 1)
+                i += 1
+            listy.append(draftPicksTemp[itemStart + 1:itemEnd])
+            #print("Appended")
+
+            #draftPicksTemp = draftPicksTemp[itemEnd:]
+        #for item in self.draftPicksRaw:
+        #    item = str(item)
+        #    thing = re.split(':|\n', item)
+        #    listy.append(thing)
+        
+        everything = []
         #puts every item in a dictionary
-        for thing in listy:
-            counter = 0
-            for item in thing:
-                #print(counter)
-                #print(item)
-                if (counter < 9):
-                    if (counter < len(thing) - 2) and (counter % 2 == 0):
-                        thing[counter] = thing[counter].replace(",", "")
-                        thing[counter + 1] = thing[counter + 1].replace(",", "")
-                        thing[counter] = thing[counter].replace("'", "")
-                        thing[counter + 1] = thing[counter + 1].replace("'", "")
-                        thing[counter] = thing[counter].replace(" ", "")
-                        thing[counter + 1] = thing[counter + 1].replace(" ", "", 1)
-                        thing[counter] = thing[counter].replace("{", "")
-                        total[thing[counter]] = thing[counter + 1]
-                        #print(total)
-                else:
-                    if (counter < len(thing) - 2) and (counter % 2 == 0):
-                        thing[counter + 2] = thing[counter + 2].replace(",", "")
-                        thing[counter + 1] = thing[counter + 1].replace(",", "")
-                        thing[counter + 2] = thing[counter + 2].replace("'", "")
-                        thing[counter + 1] = thing[counter + 1].replace("'", "")
-                        thing[counter + 2] = thing[counter + 2].replace(" ", "")
-                        thing[counter + 1] = thing[counter + 1].replace(" ", "", 1)
-                        thing[counter + 2] = thing[counter + 2].replace("{", "")
-                        thing[counter + 2] = thing[counter + 2].replace("}", "")
-                        total[thing[counter + 1]] = thing[counter + 2]
-                        #print(total)
-                counter += 1
-            #print(total)
-            #print("NEW LINE--------")
-            total_copy = total.copy()
-            everything.append(total_copy)
-            total.clear()
-        #print("Done")
+        for item in listy:
+            lines = item.splitlines()
+            draftPick = {}
+            for line in lines:
+                line = line.replace("'", "")
+                line = line.replace(" ", "")
+                line = line.replace(",", "")
+                line = line.replace("}", "")
+                line = line.replace("{", "")
+                lineSplit = line.split(":")
+                draftPick[lineSplit[0]] = lineSplit[1]
+            everything.append(draftPick)
         self.master.draftPicks = everything
-        x=0
         #End of Seth's 
         
     def closeEvent(self): #When theres no import or file selected when closing
@@ -327,14 +332,14 @@ class ImportDataDialog(Toplevel):
             if( (pickOverall + 10) > (len(draftPicks)) ):
                 picksAfter = (len(draftPicks)) - pickOverall
             while(counta2<picksAfter):
-                pos1 = (draftPicks[pickOverall+counta2].get("position")).lower()
+                pos1 = (draftPicks[pickOverall+counta2].get("position").lower())
                 if(pos1 == self.userInputNeeds[counta]):
-                    counter4 = 0
+                    i4 = 0
                     appendOrNo2 = 0
-                    while(counter4 < len(recPicks)):
-                        if(recPicks[counter4] == draftPicks[pickOverall+counta2]):
+                    while(i4 < len(recPicks)):
+                        if(recPicks[i4] == draftPicks[pickOverall+counta2]):
                             appendOrNo2 = 1
-                        counter4+=1
+                        i4+=1
                     if(appendOrNo2 == 0):
                         recPicks.append(draftPicks[pickOverall+counta2])
                         counta2+=10
@@ -348,23 +353,23 @@ class ImportDataDialog(Toplevel):
             while(pickTally<len(draftPicks)):
                 pos = (draftPicks[pickTally].get("position")).lower()
                 numNeeds = len(self.userInputNeeds)
-                counter2=0
-                while(counter2 < numNeeds):
+                j=0
+                while(j < numNeeds):
                     if(stop == 0):
-                        if(pos == self.userInputNeeds[counter2]):
-                            counter3 = 0
+                        if(pos == self.userInputNeeds[j]):
+                            k = 0
                             appendOrNo = 0
-                            while(counter3 < len(recPicks)):
-                                if(recPicks[counter3] == draftPicks[pickTally]):
+                            while(k < len(recPicks)):
+                                if(recPicks[k] == draftPicks[pickTally]):
                                     appendOrNo = 1
-                                counter3+=1
+                                k+=1
                             if(appendOrNo == 0):
                                 recPicks.append(draftPicks[pickTally])
                     if(len(recPicks) == 3):
                         stop = 1
-                        counter2+=numNeeds
+                        j+=numNeeds
                         pickTally+=(len(draftPicks))
-                    counter2 += 1
+                    j += 1
                 pickTally+=1
         pickTally = pickOverall
         #If the previous two loops still do not produce three picks, this loop goes through the picks until it finds enough selections, regardless of the user needs,
@@ -372,12 +377,12 @@ class ImportDataDialog(Toplevel):
         if(len(recPicks) != 3):
             while(pickTally<len(draftPicks)):
                 if(len(recPicks) != 3):
-                    counterAgain = 0
+                    iAgain = 0
                     appendOrNo3 = 0
-                    while(counterAgain < len(recPicks)):
-                        if(recPicks[counterAgain] == draftPicks[pickTally]):
+                    while(iAgain < len(recPicks)):
+                        if(recPicks[iAgain] == draftPicks[pickTally]):
                             appendOrNo3 = 1
-                        counterAgain+=1
+                        iAgain+=1
                     if(appendOrNo3 == 0):
                         recPicks.append(draftPicks[pickTally])
                 else:
@@ -405,13 +410,13 @@ class ImportDataDialog(Toplevel):
             userInputNum = 1
             userChoice = reccoPicks[userInputNum]
             selectedPlayers.append(userChoice)
-            posCounter = 0
+            posi = 0
             posPos = userChoice.get("position").lower()
-            while(posCounter < len(listOfNeeds)):
-                if(posPos == listOfNeeds[posCounter]):
-                    listOfNeeds.pop(posCounter)
-                    posCounter += len(listOfNeeds)
-                posCounter+=1
+            while(posi < len(listOfNeeds)):
+                if(posPos == listOfNeeds[posi]):
+                    listOfNeeds.pop(posi)
+                    posi += len(listOfNeeds)
+                posi+=1
             draftCount+=1
         print("Your Selections: \n")
         xer2 = len(selectedPlayers)
