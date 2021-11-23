@@ -83,7 +83,7 @@ class MainWindow(Tk):
         self.addPick.grid(column=1, row=2, sticky="nsew")
 
         #Opens the import dialog and then confirms the app is still running
-        self.wait_window(ImportDataDialog(master=self, controller=self))
+        self.wait_window(ImportDataDialog(master=self))
         try:
             self.winfo_exists()
         except:
@@ -107,7 +107,6 @@ class MainWindow(Tk):
         #    self.picksChoice.insert('', tk.END, text=player["name"] , values=player["position"], tags="defaultFont")
 
     def windowsScaleSetup(self): #Sets up scaling for different resolution displays
-        print(platform)
         if (platform == "win32"):
             #Tells windows to not scale the program making it look blurry
             windll.shcore.SetProcessDpiAwareness(1)
@@ -120,8 +119,6 @@ class MainWindow(Tk):
             'scaling',
             scalingFactor)
         self.mainStyle.theme_use('clam')
-        print(self.body_font.metrics('linespace'))
-        print(self.body_font.metrics('linespace') * 2)
         self.mainStyle.configure('Treeview', rowheight=int(self.body_font.metrics('linespace') * 1.6))
     
     def onDoubleClick(self, event): #Double click on the player choice tree view
@@ -184,12 +181,11 @@ class ImportDataDialog(Toplevel):
     userInputNeeds = ["quarterback","defensiveend","runningback","cornerback"
                         ,"safety","safety","widereceiver"]
 
-    def __init__(self, master, controller):
+    def __init__(self, master):
         Toplevel.__init__(self, master)
-        self.controller = controller
         self.master = master
         self.protocol("WM_DELETE_WINDOW", self.closeEvent)
-        self.controller.draftPicks = None
+        self.master.draftPicks = None
 
         self.grid()
 
@@ -214,7 +210,17 @@ class ImportDataDialog(Toplevel):
             title = 'Select CSV file',
             filetypes=acceptedFiletypes
         )
-        self.importCSV(selectedFile = selectedFile)
+
+        if (selectedFile == ""): #If no file was selected
+            result = messagebox.askretrycancel( #User can either exit CSV choice or choose again
+                title="Nothing was selected",
+                message="No file was selcted\nWould you like to try again?")
+            if (result): #If the press trey
+                self.csvButton_Pressed()
+            else:
+                return
+        else:
+            self.importCSV(selectedFile = selectedFile)
 
     def databaseButton_Pressed(self):
         self.config(cursor="wait")
@@ -288,28 +294,21 @@ class ImportDataDialog(Toplevel):
             everything.append(total_copy)
             total.clear()
         #print("Done")
-        self.controller.draftPicks = everything
+        self.master.draftPicks = everything
         x=0
         #End of Seth's 
         
     def closeEvent(self): #When theres no import or file selected when closing
-        if (self.controller.draftPicks is None):
-            result = messagebox.askretrycancel(
-                title="Nothing was selected",
-                message="No file or import option was selcted\nWould you like to try again?")
-            if (result == 'retry'):
-                self.__init__()
-            else:
-                self.master.destroy()
-        else:
-            self.destroy()
+        self.destroy()
+        if (self.master.draftPicks is None):
+            self.master.destroy()
 
     #Start of Thomas' Code
     #Gets three reccomended selections for a user pick and set of needs
     def getRecPicks(self, pickNumber, numOfNeeds):
         pickOverall = int(self.userInputPicks[pickNumber])
         pickTally = pickOverall
-        draftPicks = self.controller.draftPicks
+        draftPicks = self.master.draftPicks
         recPicks = []
         numNeeds = len(numOfNeeds)
         stop = 0
