@@ -29,8 +29,8 @@ import cfbd
 draftPicks = None
 
 positionDictionary = {
-    "Wide Receiver": ("quarterback", "wr"),
-    "Quarterback": ("widereceiver", "qb"),
+    "Wide Receiver": ("widereceiver", "wr"),
+    "Quarterback": ("Quarterback", "qb"),
     "Running Back": ("runningback", "rb"),
     "Tight End": ("tightend", "te"),
     "Offensive Tackle": ("offensivetackle", "ot"),
@@ -53,15 +53,19 @@ class MainWindow(Tk):
     def __init__(self, master=None):
         Tk.__init__(self, master)
         self.master = master
+        self.tk.call("source", "sun-valley.tcl")
         self.mainStyle = ttk.Style(self)
 
+        self.tk.call("set_theme", "dark")
+        self.mainStyle.theme_use("sun-valley-dark")
         #Changes font and increases size
         self.default_font = font.Font(family="Arial", size=16)
         self.body_font = font.Font(family="Arial", size=14)
         self.option_add("*Font", self.default_font)
-        font.nametofont("TkHeadingFont").configure(family="Arial", size=16)
+        self.mainStyle.configure("Treeview.Heading", font=self.default_font)
+        self.mainStyle.configure("TButton", font=self.body_font)
 
-        self.windowsScaleSetup()
+        self.scaleSetup()
 
         #Configures each column to a weight which incates how much of the windows it should take up
         self.columnconfigure(0, weight=25) #Round label and half of player pick treeview
@@ -72,14 +76,17 @@ class MainWindow(Tk):
         self.rowconfigure(1, weight=90)
         self.rowconfigure(2, weight=5)
 
-        self.roundLabel = tk.Label(self, text="Round: ")
+        #Label for the round entrybox
+        self.roundLabel = ttk.Label(self, text="Round: ")
         self.roundLabel.grid(column=0, row=0)
 
+        #Round entry box
         self.roundEntry_Text = tk.StringVar()
-        self.roundEntry = tk.Entry(self, textvariable=self.roundEntry_Text)
+        self.roundEntry = ttk.Entry(self, textvariable=self.roundEntry_Text)
         self.roundEntry.grid(column=1, row=0)
 
-        self.addPick = tk.Button(self, text="+", command=self.addPick)
+
+        self.addPick = ttk.Button(self, text="+", command=self.addPick)
         self.addPick.grid(column=1, row=2, sticky="nsew")
 
         #Opens the import dialog and then confirms the app is still running
@@ -106,7 +113,7 @@ class MainWindow(Tk):
         #for player in self.draftPicks:
         #    self.picksChoice.insert('', tk.END, text=player["name"] , values=player["position"], tags="defaultFont")
 
-    def windowsScaleSetup(self): #Sets up scaling for different resolution displays
+    def scaleSetup(self): #Sets up scaling for different resolution displays
         if (platform == "win32"):
             #Tells windows to not scale the program making it look blurry
             windll.shcore.SetProcessDpiAwareness(1)
@@ -117,8 +124,7 @@ class MainWindow(Tk):
         self.tk.call( #Default scaling for all of tk, scales most things
             'tk',
             'scaling',
-            scalingFactor)
-        self.mainStyle.theme_use('clam')
+            scalingFactor * 1.2)
         self.mainStyle.configure('Treeview', rowheight=int(self.body_font.metrics('linespace') * 1.6))
     
     def onDoubleClick(self, event): #Double click on the player choice tree view
@@ -130,7 +136,7 @@ class MainWindow(Tk):
         itemBBox = list(self.picksChoice.bbox(self.selectedItem[0], self.selectedItem[1])) #Item bounding box relative to treeview
         offset = [self.picksChoice.winfo_x(), self.picksChoice.winfo_y()] #Gets treeview coords to offset with
         self.editEntry_Text = tk.StringVar()
-        self.editEntry = tk.Entry(self, textvariable = self.editEntry_Text, font = self.body_font)
+        self.editEntry = ttk.Entry(self, textvariable = self.editEntry_Text, font = self.body_font)
 
         #Checks if selected item in column 0 or 1
         if (self.selectedItem[1] == "#0"): #Column 0
@@ -189,13 +195,13 @@ class ImportDataDialog(Toplevel):
 
         self.grid()
 
-        importLabel = tk.Label(self, text="Choose import location")
+        importLabel = ttk.Label(self, text="Choose import location")
         importLabel.grid(row=0, column=0, columnspan=2)
 
-        databaseButton = tk.Button(self, text="CSV", command=self.csvButton_Pressed)
+        databaseButton = ttk.Button(self, text="CSV", command=self.csvButton_Pressed)
         databaseButton.grid(row=1, column=1)
         
-        csvButton = tk.Button(self, text="Database", command=self.databaseButton_Pressed)
+        csvButton = ttk.Button(self, text="Database", command=self.databaseButton_Pressed)
         csvButton.grid(row=1, column=0)
 
         self.transient(master)
