@@ -114,7 +114,7 @@ class MainWindow(Tk):
             #Scale items using scale factor setting in Windows
             scalingFactor = windll.shcore.GetScaleFactorForDevice(0) / 100
         else:
-            scalingFactor = Screen.backingScaleFactor()
+            scalingFactor = NSScreen.mainScreen().backingScaleFactor()
         self.tk.call( #Default scaling for all of tk, scales most things
             'tk',
             'scaling',
