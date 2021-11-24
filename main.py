@@ -115,7 +115,7 @@ class MainWindow(Tk):
     def goButton_Pressed(self):
         userInputNeeds = []
         for item in self.picksChoice.get_children():
-            userInputNeeds.append(self.picksChoice.item(item)["text"])
+            userInputNeeds.append(positionDictionary[self.picksChoice.item(item)["text"]][0])
         self.draft([self.pickEntry_Text.get()], userInputNeeds)
 
     def treeViewsSetup(self):
@@ -126,6 +126,8 @@ class MainWindow(Tk):
         self.picksChoice.heading("#0", text="Position", anchor=tk.CENTER)
         self.picksChoice.column('#0', stretch=tk.YES)
         self.picksChoice.bind("<Double-1>", self.onDoubleClick) #For editing an item
+        self.picksChoice.bind("<Delete>", self.onDelete)
+        self.picksChoice.bind("<BackSpace>", self.onDelete)
         #Creates tag to change font of items
         self.picksChoice.tag_configure("defaultFont", font=self.body_font)
         #for player in self.draftPicks:
@@ -181,6 +183,9 @@ class MainWindow(Tk):
         #When you exit the entrybox
         self.editEntry.bind('<Return>', func=self.finishedEntryEdit)
         self.editEntry.bind('<FocusOut>', func=self.finishedEntryEdit)
+    
+    def onDelete(self, event):
+        self.picksChoice.delete(self.picksChoice.selection())
 
     def addPick(self):
         self.picksChoice.insert('', tk.END, text="", tags="defaultFont")
@@ -197,8 +202,8 @@ class MainWindow(Tk):
         if (positionMatched == FALSE): #If no match was found
             messagebox.showwarning(
                 message=
-                    self.editEntry_Text.get().lower()
-                    + " is not a valid position.")
+                    "\"" + self.editEntry_Text.get().lower()
+                    + "\" is not a valid position.")
 
     #Start of Thomas' Code
     #Gets three reccomended selections for a user pick and set of needs
