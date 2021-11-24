@@ -82,6 +82,7 @@ class MainWindow(Tk):
         self.pickEntry.grid(column=1, row=0)
 
         self.goButton = ttk.Button(self, text="GO!", command=self.goButton_Pressed)
+        self.goButton.grid(column=2, row=2, sticky="nsew")
 
         self.addPick = ttk.Button(self, text="+", command=self.addPick)
         self.addPick.grid(column=1, row=2, sticky="nsew")
@@ -112,10 +113,10 @@ class MainWindow(Tk):
         self.mainStyle.configure('Treeview', rowheight=int(self.body_font.metrics('linespace') * 1.6))
     
     def goButton_Pressed(self):
-        userInputPicks = []
-        #for item in self.picksChoice.get_children():
-        #    self.picksChoice.item(item).
-        self.draft(self.userInputPicks, self.userInputNeeds)
+        userInputNeeds = []
+        for item in self.picksChoice.get_children():
+            userInputNeeds.append(self.picksChoice.item(item)["text"])
+        self.draft([self.pickEntry_Text.get()], userInputNeeds)
 
     def treeViewsSetup(self):
         #Sets up pick player tree view
@@ -189,7 +190,7 @@ class MainWindow(Tk):
         for position in positionDictionary.items():
             if ((self.editEntry_Text.get().lower() == str.lower(position[0])) #Matches the display name (key)
             or (self.editEntry_Text.get().lower() in position[1])): #Matches alternative names
-                self.picksChoice.item(self.selectedItem[0], text=[position[0]]) #Sets the box to the display name (key)
+                self.picksChoice.item(self.selectedItem[0], text=position[0]) #Sets the box to the display name (key)
                 positionMatched = TRUE
                 break
         self.editEntry.destroy() #Deletes the entrybox
@@ -201,10 +202,10 @@ class MainWindow(Tk):
 
     #Start of Thomas' Code
     #Gets three reccomended selections for a user pick and set of needs
-    def getRecPicks(self, pickNumber, numOfNeeds):
-        pickOverall = int(self.userInputPicks[pickNumber])
+    def getRecPicks(self, pickNumber, numOfNeeds, listOfPicks, listOfNeeds):
+        pickOverall = int(listOfPicks[pickNumber])
         pickTally = pickOverall
-        draftPicks = self.master.draftPicks
+        draftPicks = self.draftPicks
         recPicks = []
         numNeeds = len(numOfNeeds)
         stop = 0
@@ -217,8 +218,8 @@ class MainWindow(Tk):
             if( (pickOverall + 10) > (len(draftPicks)) ):
                 picksAfter = (len(draftPicks)) - pickOverall
             while(counta2<picksAfter):
-                pos1 = (draftPicks[pickOverall+counta2].get("position").lower())
-                if(pos1 == self.userInputNeeds[counta]):
+                pos1 = draftPicks[pickOverall+counta2].get("position").lower()
+                if(pos1 == listOfNeeds[counta]):
                     i4 = 0
                     appendOrNo2 = 0
                     while(i4 < len(recPicks)):
@@ -237,11 +238,11 @@ class MainWindow(Tk):
         if(stopper == 0):
             while(pickTally<len(draftPicks)):
                 pos = (draftPicks[pickTally].get("position")).lower()
-                numNeeds = len(self.userInputNeeds)
+                numNeeds = len(listOfNeeds)
                 j=0
                 while(j < numNeeds):
                     if(stop == 0):
-                        if(pos == self.userInputNeeds[j]):
+                        if(pos == listOfNeeds[j]):
                             k = 0
                             appendOrNo = 0
                             while(k < len(recPicks)):
@@ -284,7 +285,7 @@ class MainWindow(Tk):
         reccoPicks = []
         userInputNum = 0
         while(draftCount < len(listOfPicks)):
-            reccoPicks = self.getRecPicks(draftCount, listOfNeeds)
+            reccoPicks = self.getRecPicks(draftCount, listOfNeeds, listOfPicks, listOfNeeds)
             xer = len(reccoPicks)
             counr = 0
             while(counr < xer):
