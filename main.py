@@ -16,10 +16,9 @@
 from tkinter import *
 import tkinter as tk
 from tkinter.filedialog import askopenfilename
-from tkinter import font
-from tkinter import messagebox
-from tkinter import ttk
+from tkinter import font, messagebox, ttk
 from datetime import datetime
+from Draft import Draft
 import re
 from sys import platform
 try:
@@ -79,8 +78,8 @@ class MainWindow(Tk):
 
         #Pick position entry box
         self.pickEntry_Text = tk.StringVar()
-        self.pickEntry = pickEntry(master=self)
-        self.pickEntry.grid(column=1, row=0)
+        self.pickPositionEntry = PickPositionEntry(master=self)
+        self.pickPositionEntry.grid(column=1, row=0)
 
         self.nextRoundButton = ttk.Button(self, text="Next Round", command=self.nextRoundButton_Pressed)
         self.nextRoundButton.grid(column=3, row=2, sticky='e')
@@ -123,19 +122,8 @@ class MainWindow(Tk):
         userInputNeeds = []
         for item in self.picksChoice.get_children():
             userInputNeeds.append(positionDictionary[self.picksChoice.item(item)["text"]][0])
-        self.calculateRoundLengths()
-        self.draft(3, int(self.pickEntry_Text.get()), userInputNeeds)
-    
-    def calculateRoundLengths(self):
-        self.roundStart = []
-        overallPick = 1
-        currentRound = 0
-        while(overallPick != len(self.draftPicks)):
-            if (int(self.draftPicks[overallPick - 1]["round"]) != currentRound):
-                currentRound += 1
-                self.roundStart.append(overallPick - 1)
-            overallPick += 1
-        self.roundStart.append(len(self.draftPicks) - 1)
+        Draft.calculateRoundLengths(self.draftPicks)
+        self.addSuggested(Draft.draft(self.draftPicks, 3, int(self.pickEntry_Text.get()), userInputNeeds))
 
     def treeViewsSetup(self):
         #Sets up pick player tree view
@@ -225,117 +213,6 @@ class MainWindow(Tk):
                     "\"" + self.editEntry_Text.get().lower()
                     + "\" is not a valid position.")
 
-    #Start of Thomas' Code
-    #Gets three reccomended selections for a user pick and set of needs
-    def getRecPicks(self, numOfNeeds, pickOverall, listOfNeeds):
-        pickTally = pickOverall
-        draftPicks = self.draftPicks
-        recPicks = []
-        numNeeds = len(numOfNeeds)
-        stop = 0
-        counta = 0
-        stopper = 0
-        #Goes through each poitional need in order and sees if there are any players with that position available in the 10 picks after and including the user pick
-        while(counta<numNeeds):
-            counta2=0
-            picksAfter = 10
-            if( (pickOverall + 10) > (len(draftPicks)) ):
-                picksAfter = (len(draftPicks)) - pickOverall
-            while(counta2<picksAfter):
-                pos1 = draftPicks[pickOverall+counta2].get("position").lower()
-                if(pos1 == listOfNeeds[counta]):
-                    i4 = 0
-                    appendOrNo2 = 0
-                    while(i4 < len(recPicks)):
-                        if(recPicks[i4] == draftPicks[pickOverall+counta2]):
-                            appendOrNo2 = 1
-                        i4+=1
-                    if(appendOrNo2 == 0):
-                        recPicks.append(draftPicks[pickOverall+counta2])
-                        counta2+=10
-                counta2+=1
-            if(len(recPicks) == 3):
-                stopper = 1
-                counta+=numNeeds
-            counta+=1
-        #If the previous loop does not produce three picks, this loop goes through the picks until it finds enough selections that fit under user needs or until it runs out of picks
-        if(stopper == 0):
-            while(pickTally<len(draftPicks)):
-                pos = (draftPicks[pickTally].get("position")).lower()
-                numNeeds = len(listOfNeeds)
-                j=0
-                while(j < numNeeds):
-                    if(stop == 0):
-                        if(pos == listOfNeeds[j]):
-                            k = 0
-                            appendOrNo = 0
-                            while(k < len(recPicks)):
-                                if(recPicks[k] == draftPicks[pickTally]):
-                                    appendOrNo = 1
-                                k+=1
-                            if(appendOrNo == 0):
-                                recPicks.append(draftPicks[pickTally])
-                    if(len(recPicks) == 3):
-                        stop = 1
-                        j+=numNeeds
-                        pickTally+=(len(draftPicks))
-                    j += 1
-                pickTally+=1
-        pickTally = pickOverall
-        #If the previous two loops still do not produce three picks, this loop goes through the picks until it finds enough selections, regardless of the user needs,
-        #or until it runs out of picks
-        if(len(recPicks) != 3):
-            while(pickTally<len(draftPicks)):
-                if(len(recPicks) != 3):
-                    iAgain = 0
-                    appendOrNo3 = 0
-                    while(iAgain < len(recPicks)):
-                        if(recPicks[iAgain] == draftPicks[pickTally]):
-                            appendOrNo3 = 1
-                        iAgain+=1
-                    if(appendOrNo3 == 0):
-                        recPicks.append(draftPicks[pickTally])
-                else:
-                    pickTally+=len(draftPicks)
-                pickTally+=1                        
-        return recPicks
-
-
-    #Runs the draft process using the list of user picks and list of user needs, going through each round providing three reccomened players
-    #and allowing the user to select from the three. Removes positions from the list of needs when a player with said position is selected by the user.
-    #At the end, prints a list of the selected user picks.
-    def draft(self, round, pickPosition, listOfNeeds):
-        overallPick = self.roundStart[round - 1] + pickPosition + 1    
-        selectedPlayers = []
-        draftCount = 0
-        reccoPicks = []
-        userInputNum = 0
-        reccoPicks = self.getRecPicks(listOfNeeds, overallPick, listOfNeeds)
-        xer = len(reccoPicks)
-        counr = 0
-        while(counr < xer):
-            print(reccoPicks[counr])
-            print("\n")
-            counr+=1
-        self.addSuggested(reccoPicks)
-        #userInputNum = 1
-        #userChoice = reccoPicks[userInputNum]
-        #selectedPlayers.append(userChoice)
-        #posi = 0
-        #posPos = userChoice.get("position").lower()
-        #while(posi < len(listOfNeeds)):
-        #    if(posPos == listOfNeeds[posi]):
-        #        listOfNeeds.pop(posi)
-        #        posi += len(listOfNeeds)
-        #    posi+=1
-        #draftCount+=1
-        #print("Your Selections: \n")
-        #xer2 = len(selectedPlayers)
-        #counr2 = 0
-        #while(counr2 < xer2):
-        #    print(selectedPlayers[counr2])
-        #    print("\n")
-        #    counr2+=1
     
     def addSuggested(self, suggestedPicks):
         for pick in suggestedPicks: 
@@ -352,7 +229,7 @@ class MainWindow(Tk):
             )
         self.suggestedPicksView.selection_add('I001')
 
-class pickEntry(ttk.Entry):
+class PickPositionEntry(ttk.Entry):
     def __init__(self, master, **kwargs):
         valideCommand = (master.register(self.validate), '%P')
         ttk.Entry.__init__(self, master, textvariable=master.pickEntry_Text, validate = 'key', validatecommand = valideCommand, **kwargs)
@@ -364,7 +241,6 @@ class pickEntry(ttk.Entry):
             except:
                 return False
         return False
-
 
 class ImportDataDialog(Toplevel):
     #User input for the picks that the user has as well as their top positional needs (Needs to be adjusted to be the actual user input)
