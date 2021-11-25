@@ -73,7 +73,7 @@ class MainWindow(Tk):
         self.rowconfigure(2, weight=5)
 
         #Label for the round entrybox
-        self.pickLabel = ttk.Label(self, text="Round: ")
+        self.pickLabel = ttk.Label(self, text="Pick Pos: ")
         self.pickLabel.grid(column=0, row=0)
 
         #Round entry box
@@ -116,7 +116,19 @@ class MainWindow(Tk):
         userInputNeeds = []
         for item in self.picksChoice.get_children():
             userInputNeeds.append(positionDictionary[self.picksChoice.item(item)["text"]][0])
-        self.draft([self.pickEntry_Text.get()], userInputNeeds)
+        self.calculateRoundLengths()
+        self.draft(3, int(self.pickEntry_Text.get()), userInputNeeds)
+    
+    def calculateRoundLengths(self):
+        self.roundStart = []
+        overallPick = 1
+        currentRound = 0
+        while(overallPick != len(self.draftPicks)):
+            if (int(self.draftPicks[overallPick - 1]["round"]) != currentRound):
+                currentRound += 1
+                self.roundStart.append(overallPick - 1)
+            overallPick += 1
+        self.roundStart.append(len(self.draftPicks) - 1)
 
     def treeViewsSetup(self):
         #Sets up pick player tree view
@@ -134,27 +146,27 @@ class MainWindow(Tk):
         #    self.picksChoice.insert('', tk.END, text=player["name"] , values=player["position"], tags="defaultFont")
 
         #Sets up pick player tree view
-        self.suggestedPicks = ttk.Treeview(self,
+        self.suggestedPicksView = ttk.Treeview(self,
             columns=("college", "position", "height", "weight", "pre-grade", "overall"))
-        self.suggestedPicks.grid(column=4, row=1, columnspan=2, sticky="nsew")
+        self.suggestedPicksView.grid(column=4, row=1, columnspan=2, sticky="nsew")
         #Sets up treeview columns and heading
-        self.suggestedPicks.heading("#0", text="Name", anchor=tk.CENTER)
-        self.suggestedPicks.heading("#1", text="College", anchor=tk.CENTER)
-        self.suggestedPicks.heading("#2", text="Position", anchor=tk.CENTER)
-        self.suggestedPicks.heading("#3", text="Height", anchor=tk.CENTER)
-        self.suggestedPicks.heading("#4", text="Weight", anchor=tk.CENTER)
-        self.suggestedPicks.heading("#5", text="Pre-Grade", anchor=tk.CENTER)
-        self.suggestedPicks.heading("#6", text="Overall", anchor=tk.CENTER)
-        self.suggestedPicks.column('#0', stretch=tk.YES)
-        self.suggestedPicks.column('#1', stretch=tk.YES)
-        self.suggestedPicks.column('#2', stretch=tk.YES)
-        self.suggestedPicks.column('#3', stretch=tk.YES)
-        self.suggestedPicks.column('#4', stretch=tk.YES)
-        self.suggestedPicks.column('#5', stretch=tk.YES)
-        self.suggestedPicks.column('#6', stretch=tk.YES)
-        self.suggestedPicks.bind("<Double-1>", self.onDoubleClick) #For editing an item
+        self.suggestedPicksView.heading("#0", text="Name", anchor=tk.CENTER)
+        self.suggestedPicksView.heading("#1", text="College", anchor=tk.CENTER)
+        self.suggestedPicksView.heading("#2", text="Position", anchor=tk.CENTER)
+        self.suggestedPicksView.heading("#3", text="Height", anchor=tk.CENTER)
+        self.suggestedPicksView.heading("#4", text="Weight", anchor=tk.CENTER)
+        self.suggestedPicksView.heading("#5", text="Pre-Grade", anchor=tk.CENTER)
+        self.suggestedPicksView.heading("#6", text="Overall", anchor=tk.CENTER)
+        self.suggestedPicksView.column('#0', stretch=tk.YES)
+        self.suggestedPicksView.column('#1', stretch=tk.YES)
+        self.suggestedPicksView.column('#2', stretch=tk.YES)
+        self.suggestedPicksView.column('#3', stretch=tk.YES)
+        self.suggestedPicksView.column('#4', stretch=tk.YES)
+        self.suggestedPicksView.column('#5', stretch=tk.YES)
+        self.suggestedPicksView.column('#6', stretch=tk.YES)
+        self.suggestedPicksView.bind("<Double-1>", self.onDoubleClick) #For editing an item
         #Creates tag to change font of items
-        self.suggestedPicks.tag_configure("defaultFont", font=self.body_font)
+        self.suggestedPicksView.tag_configure("defaultFont", font=self.body_font)
     
     def onDoubleClick(self, event): #Double click on the player choice tree view
         try:
@@ -207,8 +219,7 @@ class MainWindow(Tk):
 
     #Start of Thomas' Code
     #Gets three reccomended selections for a user pick and set of needs
-    def getRecPicks(self, pickNumber, numOfNeeds, listOfPicks, listOfNeeds):
-        pickOverall = int(listOfPicks[pickNumber])
+    def getRecPicks(self, numOfNeeds, pickOverall, listOfNeeds):
         pickTally = pickOverall
         draftPicks = self.draftPicks
         recPicks = []
@@ -281,41 +292,56 @@ class MainWindow(Tk):
                 pickTally+=1                        
         return recPicks
 
+
     #Runs the draft process using the list of user picks and list of user needs, going through each round providing three reccomened players
     #and allowing the user to select from the three. Removes positions from the list of needs when a player with said position is selected by the user.
     #At the end, prints a list of the selected user picks.
-    def draft(self, listOfPicks, listOfNeeds):
+    def draft(self, round, pickPosition, listOfNeeds):
+        overallPick = self.roundStart[round - 1] + pickPosition + 1    
         selectedPlayers = []
         draftCount = 0
         reccoPicks = []
         userInputNum = 0
-        while(draftCount < len(listOfPicks)):
-            reccoPicks = self.getRecPicks(draftCount, listOfNeeds, listOfPicks, listOfNeeds)
-            xer = len(reccoPicks)
-            counr = 0
-            while(counr < xer):
-                print(reccoPicks[counr])
-                print("\n")
-                counr+=1
-            print("Select Player")
-            userInputNum = 1
-            userChoice = reccoPicks[userInputNum]
-            selectedPlayers.append(userChoice)
-            posi = 0
-            posPos = userChoice.get("position").lower()
-            while(posi < len(listOfNeeds)):
-                if(posPos == listOfNeeds[posi]):
-                    listOfNeeds.pop(posi)
-                    posi += len(listOfNeeds)
-                posi+=1
-            draftCount+=1
-        print("Your Selections: \n")
-        xer2 = len(selectedPlayers)
-        counr2 = 0
-        while(counr2 < xer2):
-            print(selectedPlayers[counr2])
+        reccoPicks = self.getRecPicks(listOfNeeds, overallPick, listOfNeeds)
+        xer = len(reccoPicks)
+        counr = 0
+        while(counr < xer):
+            print(reccoPicks[counr])
             print("\n")
-            counr2+=1
+            counr+=1
+        self.addSuggested(reccoPicks)
+        #userInputNum = 1
+        #userChoice = reccoPicks[userInputNum]
+        #selectedPlayers.append(userChoice)
+        #posi = 0
+        #posPos = userChoice.get("position").lower()
+        #while(posi < len(listOfNeeds)):
+        #    if(posPos == listOfNeeds[posi]):
+        #        listOfNeeds.pop(posi)
+        #        posi += len(listOfNeeds)
+        #    posi+=1
+        #draftCount+=1
+        #print("Your Selections: \n")
+        #xer2 = len(selectedPlayers)
+        #counr2 = 0
+        #while(counr2 < xer2):
+        #    print(selectedPlayers[counr2])
+        #    print("\n")
+        #    counr2+=1
+    
+    def addSuggested(self, suggestedPicks):
+        for pick in suggestedPicks:
+            self.suggestedPicksView.insert('', tk.END, tags="defaultFont",
+                text=pick["name"],
+                values=(
+                    pick["college_team"],
+                    pick["position"],
+                    pick["height"],
+                    pick["weight"],
+                    pick["pre_draft_grade"],
+                    pick["overall"],
+                )
+            )
 
 
 class ImportDataDialog(Toplevel):
@@ -423,7 +449,7 @@ class ImportDataDialog(Toplevel):
                 lineSplit = line.split(":")
                 draftPick[lineSplit[0]] = lineSplit[1]
             everything.append(draftPick)
-        self.master.draftPicks = everything
+        self.master.draftPicks = sorted(everything, key=lambda d: (int(d['round']), int(d['pick']))) 
         #End of Seth's 
         
     def closeEvent(self): #When theres no import or file selected when closing
