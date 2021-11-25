@@ -20,6 +20,10 @@ from tkinter import font
 from tkinter import messagebox
 from tkinter import ttk
 from datetime import datetime
+import PIL.Image
+import PIL.ImageTk
+import re
+import os
 from sys import platform
 try:
     from ctypes import windll
@@ -157,14 +161,15 @@ class MainWindow(Tk):
         self.suggestedPicksView.heading("#4", text="Weight", anchor=tk.CENTER)
         self.suggestedPicksView.heading("#5", text="Pre-Grade", anchor=tk.CENTER)
         self.suggestedPicksView.heading("#6", text="Overall", anchor=tk.CENTER)
-        self.suggestedPicksView.column('#0', stretch=tk.YES)
-        self.suggestedPicksView.column('#1', stretch=tk.YES)
-        self.suggestedPicksView.column('#2', stretch=tk.YES)
-        self.suggestedPicksView.column('#3', stretch=tk.YES)
-        self.suggestedPicksView.column('#4', stretch=tk.YES)
-        self.suggestedPicksView.column('#5', stretch=tk.YES)
-        self.suggestedPicksView.column('#6', stretch=tk.YES)
         self.suggestedPicksView.bind("<Double-1>", self.onDoubleClick) #For editing an item
+        self.suggestedPicksView.column('#0', stretch=tk.YES, width=300)
+        self.suggestedPicksView.column('#1', stretch=tk.YES, width=150)
+        self.suggestedPicksView.column('#2', stretch=tk.YES, width=300)
+        self.suggestedPicksView.column('#3', stretch=tk.YES, width=120)
+        self.suggestedPicksView.column('#4', stretch=tk.YES, width=120)
+        self.suggestedPicksView.column('#5', stretch=tk.YES, width=170)
+        self.suggestedPicksView.column('#6', stretch=tk.YES, width=130)
+        
         #Creates tag to change font of items
         self.suggestedPicksView.tag_configure("defaultFont", font=self.body_font)
     
@@ -330,19 +335,19 @@ class MainWindow(Tk):
         #    counr2+=1
     
     def addSuggested(self, suggestedPicks):
-        for pick in suggestedPicks:
-            self.suggestedPicksView.insert('', tk.END, tags="defaultFont",
-                text=pick["name"],
+        for pick in suggestedPicks: 
+            self.suggestedPicksView.insert('', tk.END, tags=("defaultFont", pick),
+                text=re.sub(r"(\w)([A-Z])", r"\1 \2", pick["name"]),
                 values=(
                     pick["college_team"],
-                    pick["position"],
-                    pick["height"],
-                    pick["weight"],
+                    re.sub(r"(\w)([A-Z])", r"\1 \2", pick["position"]),
+                    pick["height"] + " in",
+                    pick["weight"] + " Ib",
                     pick["pre_draft_grade"],
-                    pick["overall"],
+                    pick["overall"]
                 )
             )
-
+        self.suggestedPicksView.selection_add('I001')
 
 class ImportDataDialog(Toplevel):
     #User input for the picks that the user has as well as their top positional needs (Needs to be adjusted to be the actual user input)

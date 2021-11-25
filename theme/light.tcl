@@ -11,9 +11,9 @@ namespace eval ttk::theme::sun-valley-light {
     ttk::style theme create sun-valley-light -parent clam -settings {
         proc load_images {imgdir} {
             variable images
-            foreach file [glob -directory $imgdir *.png] {
+            foreach file [glob -directory $imgdir *.gif] {
                 set images([file tail [file rootname $file]]) \
-                [image create photo -file $file -format png]
+                [image create photo -file $file -format gif]
             }
         }
 
