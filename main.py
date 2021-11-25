@@ -20,10 +20,7 @@ from tkinter import font
 from tkinter import messagebox
 from tkinter import ttk
 from datetime import datetime
-import PIL.Image
-import PIL.ImageTk
 import re
-import os
 from sys import platform
 try:
     from ctypes import windll
@@ -77,19 +74,23 @@ class MainWindow(Tk):
         self.rowconfigure(2, weight=5)
 
         #Label for the round entrybox
-        self.pickLabel = ttk.Label(self, text="Pick Pos: ")
+        self.pickLabel = ttk.Label(self, text="Pick Position: ")
         self.pickLabel.grid(column=0, row=0)
 
-        #Round entry box
+        #Pick position entry box
         self.pickEntry_Text = tk.StringVar()
-        self.pickEntry = ttk.Entry(self, textvariable=self.pickEntry_Text)
+        self.pickEntry = pickEntry(master=self)
         self.pickEntry.grid(column=1, row=0)
 
-        self.goButton = ttk.Button(self, text="GO!", command=self.goButton_Pressed)
-        self.goButton.grid(column=2, row=2, sticky="nsew")
+        self.nextRoundButton = ttk.Button(self, text="Next Round", command=self.nextRoundButton_Pressed)
+        self.nextRoundButton.grid(column=3, row=2, sticky='e')
 
         self.addPick = ttk.Button(self, text="+", command=self.addPick)
         self.addPick.grid(column=1, row=2, sticky="nsew")
+
+        self.suggestedPicksLabel = ttk.Label(self, text="Suggested Picks")
+        self.suggestedPicksLabel.grid(column=3, row=0, sticky='')
+
 
         #Opens the import dialog and then confirms the app is still running
         self.wait_window(ImportDataDialog(master=self))
@@ -99,6 +100,7 @@ class MainWindow(Tk):
             exit()
 
         self.treeViewsSetup()
+        
         #Calls the draft function, thus running the code
         #self.draft(self.userInputPicks, self.userInputNeeds)
 
@@ -116,7 +118,8 @@ class MainWindow(Tk):
             scalingFactor * 1.2)
         self.mainStyle.configure('Treeview', rowheight=int(self.body_font.metrics('linespace') * 1.6))
     
-    def goButton_Pressed(self):
+
+    def nextRoundButton_Pressed(self):
         userInputNeeds = []
         for item in self.picksChoice.get_children():
             userInputNeeds.append(positionDictionary[self.picksChoice.item(item)["text"]][0])
@@ -152,7 +155,7 @@ class MainWindow(Tk):
         #Sets up pick player tree view
         self.suggestedPicksView = ttk.Treeview(self,
             columns=("college", "position", "height", "weight", "pre-grade", "overall"))
-        self.suggestedPicksView.grid(column=4, row=1, columnspan=2, sticky="nsew")
+        self.suggestedPicksView.grid(column=3, row=1, columnspan=2, sticky="nsew")
         #Sets up treeview columns and heading
         self.suggestedPicksView.heading("#0", text="Name", anchor=tk.CENTER)
         self.suggestedPicksView.heading("#1", text="College", anchor=tk.CENTER)
@@ -348,6 +351,20 @@ class MainWindow(Tk):
                 )
             )
         self.suggestedPicksView.selection_add('I001')
+
+class pickEntry(ttk.Entry):
+    def __init__(self, master, **kwargs):
+        valideCommand = (master.register(self.validate), '%P')
+        ttk.Entry.__init__(self, master, textvariable=master.pickEntry_Text, validate = 'key', validatecommand = valideCommand, **kwargs)
+    def validate(self, valueIfAllowed):
+        if valueIfAllowed:
+            try:
+                int(valueIfAllowed)
+                return True
+            except:
+                return False
+        return False
+
 
 class ImportDataDialog(Toplevel):
     #User input for the picks that the user has as well as their top positional needs (Needs to be adjusted to be the actual user input)
