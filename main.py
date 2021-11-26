@@ -19,6 +19,7 @@ from tkinter.filedialog import askopenfilename
 from tkinter import font, messagebox, ttk
 from datetime import datetime
 from Draft import Draft
+import ast
 import re
 from sys import platform
 try:
@@ -90,7 +91,7 @@ class MainWindow(Tk):
         self.suggestedPicksLabel = ttk.Label(self, text="Suggested Picks")
         self.suggestedPicksLabel.grid(column=3, row=0, sticky='')
 
-
+        self.round = 0
         #Opens the import dialog and then confirms the app is still running
         self.wait_window(ImportDataDialog(master=self))
         try:
@@ -119,11 +120,26 @@ class MainWindow(Tk):
     
 
     def nextRoundButton_Pressed(self):
+        currentNeeds = list(self.picksChoice.get_children())
+        if (self.round != 0):
+            pickForRound = ast.literal_eval(self.suggestedPicksView.item(self.suggestedPicksView.selection())['tags'][1])
+            for position in positionDictionary.items():
+                if (pickForRound['position'].lower() == position[1][0]): #Matches alternative names
+                    for need in currentNeeds:
+                        if (len(self.picksChoice.item(need)["tags"]) == 2):
+                            currentNeeds.remove(need)
+                        if (self.picksChoice.item(need)["text"] == position[0]):
+                            self.picksChoice.item(need, tags=("defaultFont", "green"))
+                            currentNeeds.remove(need)
+                            break
+                    break
         userInputNeeds = []
-        for item in self.picksChoice.get_children():
+        self.round += 1
+        for item in currentNeeds:
             userInputNeeds.append(positionDictionary[self.picksChoice.item(item)["text"]][0])
         Draft.calculateRoundLengths(self.draftPicks)
-        self.addSuggested(Draft.draft(self.draftPicks, 3, int(self.pickEntry_Text.get()), userInputNeeds))
+        self.suggestedPicksLabel.config(text="Suggested Picks for Round #" + str(self.round))
+        self.addSuggested(Draft.draft(self.draftPicks, self.round, int(self.pickEntry_Text.get()), userInputNeeds))
 
     def treeViewsSetup(self):
         #Sets up pick player tree view
@@ -137,6 +153,7 @@ class MainWindow(Tk):
         self.picksChoice.bind("<BackSpace>", self.onDelete)
         #Creates tag to change font of items
         self.picksChoice.tag_configure("defaultFont", font=self.body_font)
+        self.picksChoice.tag_configure("green", background='green')
         #for player in self.draftPicks:
         #    self.picksChoice.insert('', tk.END, text=player["name"] , values=player["position"], tags="defaultFont")
 
@@ -227,6 +244,7 @@ class MainWindow(Tk):
                     pick["overall"]
                 )
             )
+            self 
         self.suggestedPicksView.selection_add('I001')
 
 class PickPositionEntry(ttk.Entry):
