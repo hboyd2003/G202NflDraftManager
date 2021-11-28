@@ -27,6 +27,7 @@ try:
 except ImportError:
     from AppKit import NSScreen
 import cfbd
+import os
 positionDictionary = {
     "Wide Receiver": ("widereceiver", "wr"),
     "Quarterback": ("Quarterback", "qb"),
@@ -50,7 +51,7 @@ class MainWindow(Tk):
     def __init__(self, master=None):
         Tk.__init__(self, master)
         self.master = master
-        self.tk.call("source", "sun-valley.tcl")
+        self.tk.call("source", os.path.join(os.path.dirname(os.path.realpath(__file__)), "sun-valley.tcl"))
         self.mainStyle = ttk.Style(self)
 
         self.tk.call("set_theme", "dark")
@@ -270,6 +271,7 @@ class ImportDataDialog(Toplevel):
         Toplevel.__init__(self, master)
         self.master = master
         self.protocol("WM_DELETE_WINDOW", self.closeEvent)
+        self.wm_title("Pick import location")
         self.master.draftPicks = None
 
         self.grid()
@@ -374,5 +376,5 @@ class ImportDataDialog(Toplevel):
             self.master.destroy()
 
 mainWindow = MainWindow(None) 
-mainWindow.wm_title("IDK")
+mainWindow.wm_title("GM-AID: Draft Managment Utility")
 mainWindow.mainloop()
