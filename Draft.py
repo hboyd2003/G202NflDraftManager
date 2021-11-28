@@ -124,3 +124,47 @@ class Draft(object):
                 Draft.roundStart.append(overallPick - 1)
             overallPick += 1
         Draft.roundStart.append(len(draftPicks) - 1)
+
+    @staticmethod
+    def importCSV(self, selectedFile):
+        #Start of Seth's code
+
+        #opens the csv and puts all the data in a dictionary
+        import csv
+        with open(selectedFile) as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=',')
+            line_count = 0
+            content = {}
+
+            #puts all of the csv data into the dictionary "content"
+            for row in csv_reader:
+                if line_count == 0:
+                    names = f'{" ".join(row)}'
+                    #print(names)
+                    if ("pick" in names):
+                        print("yee")
+                content[line_count] = row
+                line_count += 1
+                
+            #print(content[0])
+            #print(content[1])
+
+            line_count = 0
+            temp_dic = {}
+            matched = []
+
+            #organises all the player data into dictionaries that are inside the list "matched"
+            while line_count < len(content):
+                if line_count != 0:
+                    mc = 0
+                    while mc < len(content[0]):
+                        temp_dic[content[0][mc]] = content[line_count][mc]
+                        #print(temp_dic[content[0][mc]])
+                        mc += 1
+                    matched.append(temp_dic)
+                    #print(matched[line_count - 1].get("pick"))
+                    temp_dic = {}
+                line_count += 1
+
+            #you can access csv data using matched[x].get("data")
+            #End of Seth's code
