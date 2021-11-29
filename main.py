@@ -21,7 +21,7 @@ from datetime import datetime
 from Draft import Draft
 import ast
 import re
-from sys import platform
+from sys import maxsize, platform
 try:
     from ctypes import windll
 except ImportError:
@@ -40,7 +40,7 @@ positionDictionary = {
     "Outside Linebacker": ("outsidelinebacker", "olb"),
     "Defensive End": ("defensiveend", "de"),
     "Safety": ("safety", "s"),
-    "center": ("center", "c"),
+    "Center": ("center", "c"),
     "Place Kicker": ("placekicker", "pk"),
     "Defensive Tackle": ("defensivetackle", "dt"),
     "Long Snapper": ("longsnapper", "ls"),
@@ -53,6 +53,7 @@ class MainWindow(Tk):
         self.master = master
         self.tk.call("source", os.path.join(os.path.dirname(os.path.realpath(__file__)), "sun-valley.tcl"))
         self.mainStyle = ttk.Style(self)
+        self.userDraftPicks = []
 
         self.tk.call("set_theme", "dark")
         self.mainStyle.theme_use("sun-valley-dark")
@@ -66,33 +67,30 @@ class MainWindow(Tk):
         self.scaleSetup()
 
         #Configures each column to a weight which incates how much of the windows it should take up
-        self.columnconfigure(0, weight=25) #Round label and half of player pick treeview
-        self.columnconfigure(1, weight=25) #Round entrybox, half of player pick treeview and + button
-        self.columnconfigure(2, weight=5) #Spacer
-        self.columnconfigure(3, weight=45) #Suggested pick players treeview
+        self.columnconfigure(0, weight=50) #Round entrybox, half of player pick treeview and + button
+        self.columnconfigure(1, weight=5) #Spacer
+        self.columnconfigure(2, weight=45) #Suggested pick players treeview
         self.rowconfigure(0, weight=5) 
         self.rowconfigure(1, weight=90)
         self.rowconfigure(2, weight=5)
 
-        #Label for the round entrybox
-        self.pickLabel = ttk.Label(self, text="Pick Position: ")
-        self.pickLabel.grid(column=0, row=0)
-
         #Pick position entry box
-        self.pickEntry_Text = tk.StringVar()
-        self.pickPositionEntry = PickPositionEntry(master=self)
-        self.pickPositionEntry.grid(column=1, row=0)
-
-        self.nextRoundButton = ttk.Button(self, text="Next Round", command=self.nextRoundButton_Pressed)
-        self.nextRoundButton.grid(column=3, row=2, sticky='e')
-
-        self.addPick = ttk.Button(self, text="+", command=self.addPick)
-        self.addPick.grid(column=1, row=2, sticky="nsew")
+        self.pickPositionLabel = ttk.Label(self, text="Your pick needs")
+        self.pickPositionLabel.grid(column=0, row=0)
 
         self.suggestedPicksLabel = ttk.Label(self, text="Suggested Picks")
-        self.suggestedPicksLabel.grid(column=3, row=0, sticky='')
+        self.suggestedPicksLabel.grid(column=2, row=0, sticky='')
 
-        self.round = 0
+        self.nextPickButton = ttk.Button(self, text="Next Pick", command=self.nextPickButton_Pressed)
+        self.nextPickButton.grid(column=2, row=2, sticky='e')
+
+        self.seeSelection = ttk.Button(self, text="See your selection", command=self.seeSelection_Pressed)
+
+        self.addPick = ttk.Button(self, text="+", command=self.addPick)
+        self.addPick.grid(column=0, row=2, sticky="nsew")
+
+
+        self.pickPosition = 0
         #Opens the import dialog and then confirms the app is still running
         self.wait_window(ImportDataDialog(master=self))
         try:
@@ -119,13 +117,16 @@ class MainWindow(Tk):
             scalingFactor * 1.2)
         self.mainStyle.configure('Treeview', rowheight=int(self.body_font.metrics('linespace') * 1.6))
     
+    def seeSelection_Pressed(self):
+        self.wait_window(selectionView(master=self))
 
-    def nextRoundButton_Pressed(self):
+    def nextPickButton_Pressed(self):
+
         currentNeeds = list(self.picksChoice.get_children())
-        if (self.round != 0):
-            pickForRound = ast.literal_eval(self.suggestedPicksView.item(self.suggestedPicksView.selection())['tags'][1])
+        if (self.pickPosition != 0):
+            playerForPick = ast.literal_eval(self.suggestedPicksView.item(self.suggestedPicksView.selection())['tags'][1])
             for position in positionDictionary.items():
-                if (pickForRound['position'].lower() == position[1][0]): #Matches alternative names
+                if (playerForPick['position'].lower() == position[1][0]): #Matches alternative names
                     for need in currentNeeds:
                         if (len(self.picksChoice.item(need)["tags"]) == 2):
                             currentNeeds.remove(need)
@@ -134,21 +135,39 @@ class MainWindow(Tk):
                             currentNeeds.remove(need)
                             break
                     break
+            self.userDraftPicks.append(playerForPick)
+        else:
+            self.userPickPositions = []
+            for item in currentNeeds:
+                self.userPickPositions.append(int(self.picksChoice.item(item)["values"][0]))
+                self.userPickPositions.sort()
         userInputNeeds = []
-        self.round += 1
+        self.pickPosition += 1
+
+        #Clear the treeview list items
+        for item in self.suggestedPicksView.get_children():
+            self.suggestedPicksView.delete(item)
+
         for item in currentNeeds:
             userInputNeeds.append(positionDictionary[self.picksChoice.item(item)["text"]][0])
-        Draft.calculateRoundLengths(self.draftPicks)
-        self.suggestedPicksLabel.config(text="Suggested Picks for Round #" + str(self.round))
-        self.addSuggested(Draft.draft(self.draftPicks, self.round, int(self.pickEntry_Text.get()), userInputNeeds))
+
+        self.suggestedPicksLabel.config(text="Suggested Picks for pick position " + str(self.userPickPositions[self.pickPosition - 1]))
+
+        self.addSuggested(Draft.draft(self.draftPicks, self.userPickPositions[self.pickPosition - 1], userInputNeeds))
+
+        if(len(Draft.roundStart) - 1 == round):
+            self.nextPickButton.grid_forget()
+            self.seeSelection.grid(column=3, row=2, sticky='e')
 
     def treeViewsSetup(self):
         #Sets up pick player tree view
-        self.picksChoice = ttk.Treeview(self)
-        self.picksChoice.grid(column=0, row=1, columnspan=2, sticky="nsew")
+        self.picksChoice = ttk.Treeview(self, columns=("pickposition"))
+        self.picksChoice.grid(column=0, row=1, sticky="nsew")
         #Sets up treeview columns and heading
         self.picksChoice.heading("#0", text="Position", anchor=tk.CENTER)
+        self.picksChoice.heading("#1", text="Pick #", anchor=tk.CENTER)
         self.picksChoice.column('#0', stretch=tk.YES)
+        self.picksChoice.column('#1', stretch=tk.YES)
         self.picksChoice.bind("<Double-1>", self.onDoubleClick) #For editing an item
         self.picksChoice.bind("<Delete>", self.onDelete)
         self.picksChoice.bind("<BackSpace>", self.onDelete)
@@ -161,7 +180,7 @@ class MainWindow(Tk):
         #Sets up pick player tree view
         self.suggestedPicksView = ttk.Treeview(self,
             columns=("college", "position", "height", "weight", "pre-grade", "overall"))
-        self.suggestedPicksView.grid(column=3, row=1, columnspan=2, sticky="nsew")
+        self.suggestedPicksView.grid(column=2, row=1, sticky="nsew")
         #Sets up treeview columns and heading
         self.suggestedPicksView.heading("#0", text="Name", anchor=tk.CENTER)
         self.suggestedPicksView.heading("#1", text="College", anchor=tk.CENTER)
@@ -170,7 +189,6 @@ class MainWindow(Tk):
         self.suggestedPicksView.heading("#4", text="Weight", anchor=tk.CENTER)
         self.suggestedPicksView.heading("#5", text="Pre-Grade", anchor=tk.CENTER)
         self.suggestedPicksView.heading("#6", text="Overall", anchor=tk.CENTER)
-        self.suggestedPicksView.bind("<Double-1>", self.onDoubleClick) #For editing an item
         self.suggestedPicksView.column('#0', stretch=tk.YES, width=300)
         self.suggestedPicksView.column('#1', stretch=tk.YES, width=150)
         self.suggestedPicksView.column('#2', stretch=tk.YES, width=300)
@@ -187,23 +205,27 @@ class MainWindow(Tk):
             self.selectedItem = (self.picksChoice.selection()[0], self.picksChoice.identify_column(event.x)) #Gets specific item based on press location and selection
         except(IndexError): #For when the user clicks on blank space
             return
-
         itemBBox = list(self.picksChoice.bbox(self.selectedItem[0], self.selectedItem[1])) #Item bounding box relative to treeview
         offset = [self.picksChoice.winfo_x(), self.picksChoice.winfo_y()] #Gets treeview coords to offset with
         self.editEntry_Text = tk.StringVar()
-        self.editEntry = ttk.Entry(self, textvariable = self.editEntry_Text, font = self.body_font)
+        
 
         #Checks if selected item in column 0 or 1
-        self.editEntry.insert(0, string = self.picksChoice.item(self.selectedItem[0], "text"))
-        offset[0] += 15 #Offset for column 0 padding
-        itemBBox[2] -= 15
+        if (self.selectedItem[1] == "#0"): #Column 0
+            self.editEntry = tk.Entry(self, textvariable = self.editEntry_Text, font = self.body_font)
+            self.editEntry.insert(0, string = self.picksChoice.item(self.selectedItem[0], "text"))
+            offset[0] += 15 #Offset for column 0 padding
+            itemBBox[2] -= 15
+        else: #Column 1
+            self.pickEntry_Text = tk.StringVar()
+            self.editEntry = PickPositionEntry(master=self)
+            self.editEntry.insert(0, string = self.picksChoice.item(self.selectedItem[0], "values")[0])
 
         self.editEntry.place(
             x = itemBBox[0] + offset[0],
             y = itemBBox[1] + offset[1],
             width=itemBBox[2],
             height=itemBBox[3])
-
         #Forces curser to be in entrybox
         self.editEntry.focus_force()
         #When you exit the entrybox
@@ -214,45 +236,44 @@ class MainWindow(Tk):
         self.picksChoice.delete(self.picksChoice.selection())
 
     def addPick(self):
-        self.picksChoice.insert('', tk.END, text="", tags="defaultFont")
+        self.picksChoice.insert('', tk.END, text="", values=("1"), tags="defaultFont")
 
     def finishedEntryEdit(self, event): #When you exit the entrybox
-        positionMatched = FALSE
-        for position in positionDictionary.items():
-            if ((self.editEntry_Text.get().lower() == str.lower(position[0])) #Matches the display name (key)
-            or (self.editEntry_Text.get().lower() in position[1])): #Matches alternative names
-                self.picksChoice.item(self.selectedItem[0], text=position[0]) #Sets the box to the display name (key)
-                positionMatched = TRUE
-                break
-        self.editEntry.destroy() #Deletes the entrybox
-        if (positionMatched == FALSE): #If no match was found
-            messagebox.showwarning(
-                message=
-                    "\"" + self.editEntry_Text.get().lower()
-                    + "\" is not a valid position.")
+        if (self.selectedItem[1] == "#0"):
+            positionMatched = FALSE
+            for position in positionDictionary.items():
+                if ((self.editEntry_Text.get().lower() == str.lower(position[0])) #Matches the display name (key)
+                or (self.editEntry_Text.get().lower() in position[1])): #Matches alternative names
+                    self.picksChoice.item(self.selectedItem[0], text=position[0]) #Sets the box to the display name (key)
+                    positionMatched = TRUE
+                    break
+            self.editEntry.destroy() #Deletes the entrybox
+            if (positionMatched == FALSE): #If no match was found
+                messagebox.showwarning(
+                    message=
+                        "\"" + self.editEntry_Text.get().lower()
+                        + "\" is not a valid position.")
+        else:
+            print("YES", self.pickEntry_Text.get())
+            self.picksChoice.item(self.selectedItem[0], values=(self.pickEntry_Text.get()))
+            self.editEntry.destroy() #Deletes the entrybox
 
     
     def addSuggested(self, suggestedPicks):
-        for pick in suggestedPicks: 
-            self.suggestedPicksView.insert('', tk.END, tags=("defaultFont", pick),
-                text=re.sub(r"(\w)([A-Z])", r"\1 \2", pick["name"]),
-                values=(
-                    pick["college_team"],
-                    re.sub(r"(\w)([A-Z])", r"\1 \2", pick["position"]),
-                    pick["height"] + " in",
-                    pick["weight"] + " Ib",
-                    pick["pre_draft_grade"],
-                    pick["overall"]
-                )
+        for pick in suggestedPicks:
+            textColumn, valueColumns = Draft.formatPick(pick) 
+            self.suggestedPicksView.insert(parent='', iid=len(self.suggestedPicksView.get_children()) + 1, index=tk.END, tags=("defaultFont", pick),
+                text=textColumn,
+                values=valueColumns
             )
-            self 
-        self.suggestedPicksView.selection_add('I001')
+        self.suggestedPicksView.selection_add('1')
 
 class PickPositionEntry(ttk.Entry):
     def __init__(self, master, **kwargs):
         valideCommand = (master.register(self.validate), '%P')
-        ttk.Entry.__init__(self, master, textvariable=master.pickEntry_Text, validate = 'key', validatecommand = valideCommand, **kwargs)
+        ttk.Entry.__init__(self, master, textvariable=master.pickEntry_Text, validate = 'key', validatecommand = valideCommand, width = 10, **kwargs)
     def validate(self, valueIfAllowed):
+        if valueIfAllowed == '': return True
         if valueIfAllowed:
             try:
                 int(valueIfAllowed)
@@ -260,6 +281,46 @@ class PickPositionEntry(ttk.Entry):
             except:
                 return False
         return False
+
+class selectionView(Toplevel):
+    def __init__(self, master):
+        Toplevel.__init__(self, master)
+        self.protocol("WM_DELETE_WINDOW", self.closeEvent)
+        self.wm_title("Your picks")
+        self.master = master
+
+        self.suggestedPicksView = ttk.Treeview(self,
+            columns=("college", "position", "height", "weight", "pre-grade", "overall"))
+        self.suggestedPicksView.pack()
+        #Sets up treeview columns and heading
+        self.suggestedPicksView.heading("#0", text="Name", anchor=tk.CENTER)
+        self.suggestedPicksView.heading("#1", text="College", anchor=tk.CENTER)
+        self.suggestedPicksView.heading("#2", text="Position", anchor=tk.CENTER)
+        self.suggestedPicksView.heading("#3", text="Height", anchor=tk.CENTER)
+        self.suggestedPicksView.heading("#4", text="Weight", anchor=tk.CENTER)
+        self.suggestedPicksView.heading("#5", text="Pre-Grade", anchor=tk.CENTER)
+        self.suggestedPicksView.heading("#6", text="Overall", anchor=tk.CENTER)
+        self.suggestedPicksView.column('#0', stretch=tk.YES, width=300)
+        self.suggestedPicksView.column('#1', stretch=tk.YES, width=150)
+        self.suggestedPicksView.column('#2', stretch=tk.YES, width=300)
+        self.suggestedPicksView.column('#3', stretch=tk.YES, width=120)
+        self.suggestedPicksView.column('#4', stretch=tk.YES, width=120)
+        self.suggestedPicksView.column('#5', stretch=tk.YES, width=170)
+        self.suggestedPicksView.column('#6', stretch=tk.YES, width=130)
+        
+        #Creates tag to change font of items
+        self.suggestedPicksView.tag_configure("defaultFont", font=self.master.body_font)
+
+        for userPick in self.master.userDraftPicks:
+            textColumn, valueColumns = Draft.formatPick(userPick) 
+            self.suggestedPicksView.insert('', tk.END, tags=("defaultFont", userPick),
+                text=textColumn,
+                values=valueColumns
+            )
+
+    def closeEvent(self): #When theres no import or file selected when closing
+        self.destroy() 
+        self.master.destroy()
 
 class ImportDataDialog(Toplevel):
     #User input for the picks that the user has as well as their top positional needs (Needs to be adjusted to be the actual user input)
@@ -287,6 +348,7 @@ class ImportDataDialog(Toplevel):
 
         self.transient(master)
         self.grab_set()
+        
         
     def csvButton_Pressed(self):
         acceptedFiletypes = (

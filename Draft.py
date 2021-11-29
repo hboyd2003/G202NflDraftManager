@@ -1,13 +1,14 @@
+import re
 class Draft(object):
     roundStart = []
 
     #Start of Thomas' Code
     #Gets three reccomended selections for a user pick and set of needs
     @staticmethod
-    def getRecPicks(draftPicks, numOfNeeds, pickOverall, listOfNeeds):
+    def getRecPicks(draftPicks, pickOverall, listOfNeeds):
         pickTally = pickOverall
         recPicks = []
-        numNeeds = len(numOfNeeds)
+        numNeeds = len(listOfNeeds)
         stop = 0
         counta = 0
         stopper = 0
@@ -81,19 +82,8 @@ class Draft(object):
     #and allowing the user to select from the three. Removes positions from the list of needs when a player with said position is selected by the user.
     #At the end, prints a list of the selected user picks.
     @staticmethod
-    def draft(draftPicks, round, pickPosition, listOfNeeds):
-        overallPick = Draft.roundStart[round - 1] + pickPosition + 1    
-        selectedPlayers = []
-        draftCount = 0
-        reccoPicks = []
-        userInputNum = 0
-        reccoPicks = Draft.getRecPicks(draftPicks, listOfNeeds, overallPick, listOfNeeds)
-        xer = len(reccoPicks)
-        counr = 0
-        while(counr < xer):
-            print(reccoPicks[counr])
-            print("\n")
-            counr+=1
+    def draft(draftPicks, pickPosition, listOfNeeds):
+        reccoPicks = Draft.getRecPicks(draftPicks, pickPosition, listOfNeeds)
         return reccoPicks
         #userInputNum = 1
         #userChoice = reccoPicks[userInputNum]
@@ -168,3 +158,16 @@ class Draft(object):
 
             #you can access csv data using matched[x].get("data")
             #End of Seth's code
+
+    @staticmethod
+    def formatPick(pick):
+        textColumn = re.sub(r"(\w)([A-Z])", r"\1 \2", pick["name"])
+        valueColumns = (
+            pick["college_team"],
+            re.sub(r"(\w)([A-Z])", r"\1 \2", pick["position"]),
+            pick["height"] + " in",
+            pick["weight"] + " Ib",
+            pick["pre_draft_grade"],
+            pick["overall"]
+        )
+        return textColumn, valueColumns
