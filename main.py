@@ -128,7 +128,7 @@ class MainWindow(Tk):
                 if (playerForPick['position'].lower() == position[1][0]): #Matches alternative names
                     for need in self.currentNeeds:
                         if (self.picksChoice.item(need)["text"] == position[0]):
-                            #self.picksChoice.item(need, tags=("defaultFont", "green"))
+                            self.picksChoice.item(need, tags=("defaultFont", "green"))
                             self.currentNeeds.remove(need)
                             break
                     break
