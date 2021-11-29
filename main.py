@@ -84,7 +84,7 @@ class MainWindow(Tk):
         self.nextPickButton = ttk.Button(self, text="Next Pick", command=self.nextPickButton_Pressed)
         self.nextPickButton.grid(column=2, row=2, sticky='e')
 
-        self.seeSelection = ttk.Button(self, text="See your selection", command=self.seeSelection_Pressed)
+        self.seeSelection = ttk.Button(self, text="See your selections", command=self.seeSelection_Pressed)
 
         self.addPick = ttk.Button(self, text="+", command=self.addPick)
         self.addPick.grid(column=0, row=2, sticky="nsew")
@@ -151,7 +151,7 @@ class MainWindow(Tk):
 
         self.suggestedPicksLabel.config(text="Suggested Picks for pick position " + str(self.userPickPositions[self.pickPosition - 1]))
 
-        self.addSuggested(Draft.draft(self.draftPicks, self.userPickPositions[self.pickPosition - 1], userInputNeeds))
+        self.addSuggested(Draft.draft(self.draftPicks, self.userPickPositions[self.pickPosition - 1], userInputNeeds, self.userDraftPicks))
 
         if(len(self.userPickPositions) == self.pickPosition):
             self.nextPickButton.grid_forget()

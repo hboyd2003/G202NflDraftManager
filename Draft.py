@@ -25,7 +25,12 @@ class Draft(object):
                     i4 = 0
                     appendOrNo2 = 0
                     while(i4 < len(recPicks)):
-                        if(recPicks[i4] == draftPicks[pickOverall+counta2]):
+                        if(recPicks[i4].get("name") == draftPicks[pickOverall+counta2].get("name")):
+                            appendOrNo2 = 1
+                        i4+=1
+                    i4 = 0
+                    while(i4 < len(eviosPicks)):
+                        if(eviosPicks[i4].get("name") == draftPicks[pickOverall+counta2].get("name")):
                             appendOrNo2 = 1
                         i4+=1
                     if(appendOrNo2 == 0):
@@ -48,7 +53,12 @@ class Draft(object):
                             k = 0
                             appendOrNo = 0
                             while(k < len(recPicks)):
-                                if(recPicks[k] == draftPicks[pickTally]):
+                                if(recPicks[k].get("name") == draftPicks[pickTally].get("name")):
+                                    appendOrNo = 1
+                                k+=1
+                            k = 0
+                            while(k < len(eviosPicks)):
+                                if(eviosPicks[k].get("name") == draftPicks[pickTally].get("name")):
                                     appendOrNo = 1
                                 k+=1
                             if(appendOrNo == 0):
@@ -68,14 +78,39 @@ class Draft(object):
                     iAgain = 0
                     appendOrNo3 = 0
                     while(iAgain < len(recPicks)):
-                        if(recPicks[iAgain] == draftPicks[pickTally]):
+                        if(recPicks[iAgain].get("name") == draftPicks[pickTally].get("name")):
+                            appendOrNo3 = 1
+                        iAgain+=1
+                    iAgain = 0
+                    while(iAgain < len(eviosPicks)):
+                        if(eviosPicks[iAgain].get("name") == draftPicks[pickTally].get("name")):
                             appendOrNo3 = 1
                         iAgain+=1
                     if(appendOrNo3 == 0):
                         recPicks.append(draftPicks[pickTally])
                 else:
                     pickTally+=len(draftPicks)
-                pickTally+=1                        
+                pickTally+=1
+        pickTally = pickOverall-1
+        if(len(recPicks) != 3):
+            while(pickTally > 1):
+                if(len(recPicks) != 3):
+                    iAgain = 0
+                    appendOrNo3 = 0
+                    while(iAgain < len(recPicks)):
+                        if(recPicks[iAgain].get("name") == draftPicks[pickTally].get("name")):
+                            appendOrNo3 = 1
+                        iAgain+=1
+                    iAgain = 0
+                    while(iAgain < len(eviosPicks)):
+                        if(eviosPicks[iAgain].get("name") == draftPicks[pickTally].get("name")):
+                            appendOrNo3 = 1
+                        iAgain+=1
+                    if(appendOrNo3 == 0):
+                        recPicks.append(draftPicks[pickTally])
+                else:
+                    pickTally-=len(draftPicks)
+                pickTally-=1
         return recPicks
 
 
