@@ -30,7 +30,7 @@ import cfbd
 import os
 positionDictionary = {
     "Wide Receiver": ("widereceiver", "wr"),
-    "Quarterback": ("Quarterback", "qb"),
+    "Quarterback": ("quarterback", "qb"),
     "Running Back": ("runningback", "rb"),
     "Tight End": ("tightend", "te"),
     "Offensive Tackle": ("offensivetackle", "ot"),
@@ -118,27 +118,25 @@ class MainWindow(Tk):
         self.mainStyle.configure('Treeview', rowheight=int(self.body_font.metrics('linespace') * 1.6))
     
     def seeSelection_Pressed(self):
+        self.userDraftPicks.append(ast.literal_eval(self.suggestedPicksView.item(self.suggestedPicksView.selection())['tags'][1]))
         self.wait_window(selectionView(master=self))
 
     def nextPickButton_Pressed(self):
-
-        currentNeeds = list(self.picksChoice.get_children())
         if (self.pickPosition != 0):
             playerForPick = ast.literal_eval(self.suggestedPicksView.item(self.suggestedPicksView.selection())['tags'][1])
             for position in positionDictionary.items():
                 if (playerForPick['position'].lower() == position[1][0]): #Matches alternative names
-                    for need in currentNeeds:
-                        if (len(self.picksChoice.item(need)["tags"]) == 2):
-                            currentNeeds.remove(need)
+                    for need in self.currentNeeds:
                         if (self.picksChoice.item(need)["text"] == position[0]):
                             self.picksChoice.item(need, tags=("defaultFont", "green"))
-                            currentNeeds.remove(need)
+                            self.currentNeeds.remove(need)
                             break
                     break
             self.userDraftPicks.append(playerForPick)
         else:
+            self.currentNeeds = list(self.picksChoice.get_children())
             self.userPickPositions = []
-            for item in currentNeeds:
+            for item in self.currentNeeds:
                 self.userPickPositions.append(int(self.picksChoice.item(item)["values"][0]))
                 self.userPickPositions.sort()
         userInputNeeds = []
@@ -148,14 +146,14 @@ class MainWindow(Tk):
         for item in self.suggestedPicksView.get_children():
             self.suggestedPicksView.delete(item)
 
-        for item in currentNeeds:
+        for item in self.currentNeeds:
             userInputNeeds.append(positionDictionary[self.picksChoice.item(item)["text"]][0])
 
         self.suggestedPicksLabel.config(text="Suggested Picks for pick position " + str(self.userPickPositions[self.pickPosition - 1]))
 
         self.addSuggested(Draft.draft(self.draftPicks, self.userPickPositions[self.pickPosition - 1], userInputNeeds))
 
-        if(len(Draft.roundStart) - 1 == round):
+        if(len(self.userPickPositions) == self.pickPosition):
             self.nextPickButton.grid_forget()
             self.seeSelection.grid(column=3, row=2, sticky='e')
 

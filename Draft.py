@@ -8,6 +8,7 @@ class Draft(object):
     def getRecPicks(draftPicks, pickOverall, listOfNeeds):
         pickTally = pickOverall
         recPicks = []
+        print(listOfNeeds)
         numNeeds = len(listOfNeeds)
         stop = 0
         counta = 0
