@@ -19,6 +19,7 @@ from tkinter.filedialog import askopenfilename
 from tkinter import font, messagebox, ttk
 from datetime import datetime
 from Draft import Draft
+from PIL import ImageTk, Image
 import ast
 import re
 from sys import maxsize, platform
@@ -53,6 +54,8 @@ class MainWindow(Tk):
         self.master = master
         self.tk.call("source", os.path.join(os.path.dirname(os.path.realpath(__file__)), "sun-valley.tcl"))
         self.mainStyle = ttk.Style(self)
+        iconImage = Image.open(os.path.join(os.path.dirname(os.path.realpath(__file__)), "icon.ico")).resize((32, 32), Image.LANCZOS)
+        self.iconphoto(False, ImageTk.PhotoImage(iconImage))
         self.userDraftPicks = []
 
         self.tk.call("set_theme", "dark")

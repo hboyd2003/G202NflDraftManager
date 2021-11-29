@@ -1,7 +1,5 @@
 import re
 class Draft(object):
-    roundStart = []
-
     #Start of Thomas' Code
     #Gets three reccomended selections for a user pick and set of needs
     @staticmethod
