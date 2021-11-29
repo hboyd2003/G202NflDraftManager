@@ -126,19 +126,28 @@ class MainWindow(Tk):
             playerForPick = ast.literal_eval(self.suggestedPicksView.item(self.suggestedPicksView.selection())['tags'][1])
             for position in positionDictionary.items():
                 if (playerForPick['position'].lower() == position[1][0]): #Matches alternative names
+                    item = (None, None)
                     for need in self.currentNeeds:
                         if (self.picksChoice.item(need)["text"] == position[0]):
-                            self.picksChoice.item(need, tags=("defaultFont", "green"))
-                            self.currentNeeds.remove(need)
+                            self.picksChoice.item(need, text=self.picksChoice.item("I00" + str(self.pickPosition))["text"])
+                            self.picksChoice.item("I00" + str(self.pickPosition), tags=("defaultFont", "green"), text = position[0])
+                            self.currentNeeds.remove("I00" + str(self.pickPosition))
                             break
                     break
             self.userDraftPicks.append(playerForPick)
         else:
+            tempPicksList = []
+            for item in self.picksChoice.get_children():
+                tempPicksList.append((int(self.picksChoice.set(item, "#1")), item))
+            tempPicksList.sort()
+            for index, (pickPosition, item) in enumerate(tempPicksList):
+                self.picksChoice.move(item, "", index)
+
+            self.disablePicksChoice() #Stops users from editing thier list of picks
             self.currentNeeds = list(self.picksChoice.get_children())
             self.userPickPositions = []
             for item in self.currentNeeds:
                 self.userPickPositions.append(int(self.picksChoice.item(item)["values"][0]))
-                self.userPickPositions.sort()
         userInputNeeds = []
         self.pickPosition += 1
 
@@ -197,6 +206,14 @@ class MainWindow(Tk):
         
         #Creates tag to change font of items
         self.suggestedPicksView.tag_configure("defaultFont", font=self.body_font)
+    
+    def disablePicksChoice(self):
+        self.picksChoice.selection_remove(self.picksChoice.selection())
+        #Binds everything you can do on the treeview to nothing
+        self.picksChoice.bind('<Button-1>', lambda e: 'break')
+        self.picksChoice.unbind("<Double-1>")
+        self.picksChoice.unbind("<Delete>")
+        self.picksChoice.unbind("<BackSpace>")
     
     def onDoubleClick(self, event): #Double click on the player choice tree view
         try:

@@ -5,7 +5,8 @@ class Draft(object):
     #Start of Thomas' Code
     #Gets three reccomended selections for a user pick and set of needs
     @staticmethod
-    def getRecPicks(draftPicks, pickOverall, listOfNeeds):
+    def getRecPicks(draftPicks, pickOverall, listOfNeeds, prevPicks):
+        eviosPicks = prevPicks
         pickTally = pickOverall
         recPicks = []
         print(listOfNeeds)
@@ -118,8 +119,8 @@ class Draft(object):
     #and allowing the user to select from the three. Removes positions from the list of needs when a player with said position is selected by the user.
     #At the end, prints a list of the selected user picks.
     @staticmethod
-    def draft(draftPicks, pickPosition, listOfNeeds):
-        reccoPicks = Draft.getRecPicks(draftPicks, pickPosition, listOfNeeds)
+    def draft(draftPicks, pickPosition, listOfNeeds, prevPicks):
+        reccoPicks = Draft.getRecPicks(draftPicks, pickPosition, listOfNeeds, prevPicks)
         return reccoPicks
         #userInputNum = 1
         #userChoice = reccoPicks[userInputNum]
