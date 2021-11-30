@@ -29,6 +29,7 @@ except ImportError:
     from AppKit import NSScreen
 import cfbd
 import os
+import csv
 positionDictionary = {
     "Wide Receiver": ("widereceiver", "wr"),
     "Quarterback": ("quarterback", "qb"),
@@ -78,7 +79,7 @@ class MainWindow(Tk):
         self.rowconfigure(2, weight=5)
 
         #Pick position entry box
-        self.pickPositionLabel = ttk.Label(self, text="Your pick needs")
+        self.pickPositionLabel = ttk.Label(self, text="Your needs and picks")
         self.pickPositionLabel.grid(column=0, row=0)
 
         self.suggestedPicksLabel = ttk.Label(self, text="Suggested Picks")
@@ -390,7 +391,11 @@ class ImportDataDialog(Toplevel):
             else:
                 return
         else:
+            self.config(cursor="wait")
             self.importCSV(selectedFile = selectedFile)
+            self.config(cursor="")
+            self.grab_release()
+            self.closeEvent()
 
     def databaseButton_Pressed(self):
         self.config(cursor="wait")
@@ -401,7 +406,74 @@ class ImportDataDialog(Toplevel):
         self.closeEvent()
 
     def importCSV(self, selectedFile):
-        print("Not implemented")
+        #Start of Seth's code
+
+        #opens the csv and puts all the data in a dictionary
+        with open(selectedFile) as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=',')
+            line_count = 0
+            content = {}
+
+            #puts all of the csv data into the dictionary "content"
+            for row in csv_reader:
+                if line_count == 0:
+                    names = f'{" ".join(row)}'
+                    #print(names)
+                    #if ("pick" in names):
+                        #print("yee")
+                content[line_count] = row
+                line_count += 1
+            #print(content[0])
+            #print(content[1])
+
+            count = -1
+            for the in content[0]:
+                count += 1
+                if (the == "player"):
+                    content[0][count] = "name"
+                if (the == "team"):
+                    content[0][count] = "college_team"
+                if (the == "pos"):
+                    content[0][count] = "position"
+                    pos_count = count
+                if (the == "height_inches"):
+                    content[0][count] = "height"
+                if (the == "pick"):
+                    content[0][count] = "overall"
+                if (the == "team"):
+                    content[0][count] = "college"
+
+
+            line_count = 0
+            temp_dic = {}
+            matched = []
+
+            #organises all the player data into dictionaries that are inside the list "matched"
+            while line_count < len(content):
+                if line_count != 0:
+                    mc = 0
+                    while mc < len(content[0]):
+                        temp_dic[content[0][mc]] = content[line_count][mc]
+                        if (content[0][mc] == "position"):
+                            #print(content[line_count][mc].lower())
+                            for title in positionDictionary:
+                                #print(positionDictionary[title])
+                                if content[line_count][mc].lower() in positionDictionary[title]:
+                                    temp_dic[content[0][mc]] = title
+
+
+                            #print(temp_dic[content[0][mc]])
+                        mc += 1
+                    matched.append(temp_dic)
+                    #print(matched[line_count - 1].get("pick"))
+                    temp_dic = {}
+                temp_dic["pre_draft_grade"] = None
+                line_count += 1
+
+            self.master.draftPicks = sorted(matched, key=lambda d: (int(d['weight']), int(d['overall'])))
+            #print(matched[0])
+            #you can access csv data using matched[x].get("data")
+            #End of Seth's code
 
     def grabDatabase(self):
         configuration = cfbd.Configuration()
