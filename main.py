@@ -132,9 +132,11 @@ class MainWindow(Tk):
                     item = (None, None)
                     for need in self.currentNeeds:
                         if (self.picksChoice.item(need)["text"] == position[0]):
-                            self.picksChoice.item(need, text=self.picksChoice.item("I00" + str(self.pickPosition))["text"])
-                            self.picksChoice.item("I00" + str(self.pickPosition), tags=("defaultFont", "green"), text = position[0])
-                            self.currentNeeds.remove("I00" + str(self.pickPosition))
+                            for need2 in self.currentNeeds:
+                                if (int(self.picksChoice.item(need2)["values"][0]) == int(self.userPickPositions[self.pickPosition - 1])):
+                                    self.picksChoice.item(need2, values=self.picksChoice.item(need)["values"])
+                                    self.picksChoice.item(need, tags=("defaultFont", "green"), values = int(self.userPickPositions[self.pickPosition - 1]))
+                                    self.currentNeeds.remove(need)
                             break
                     break
             self.userDraftPicks.append(playerForPick)
@@ -143,14 +145,15 @@ class MainWindow(Tk):
             for item in self.picksChoice.get_children():
                 tempPicksList.append((int(self.picksChoice.set(item, "#1")), item))
             tempPicksList.sort()
-            for index, (pickPosition, item) in enumerate(tempPicksList):
-                self.picksChoice.move(item, "", index)
+            #for index, (pickPosition, item) in enumerate(tempPicksList):
+            #    self.picksChoice.move(item, "", index)
 
             self.disablePicksChoice() #Stops users from editing thier list of picks
             self.currentNeeds = list(self.picksChoice.get_children())
             self.userPickPositions = []
-            for item in self.currentNeeds:
-                self.userPickPositions.append(int(self.picksChoice.item(item)["values"][0]))
+            self.currentNeedsCopy = self.currentNeeds.copy()
+            for item in tempPicksList:
+                self.userPickPositions.append(item[0])
         userInputNeeds = []
         self.pickPosition += 1
 
