@@ -1,3 +1,9 @@
+This project was built for a class and should not be used for as an actual draft manager.
+
+Original Readme Below
+
+--------------------------------------------------------------------------------------------------------------------------
+
 # G202NflDraftManager
   ## Description
   GM-AID is a tool designed to help NFL teams manage thier draft picks. It is built on Python utilizing Tkinter for GUI.
